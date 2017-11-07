@@ -3,33 +3,210 @@
 BIT='[]'
 BOT='--'
 VOID='  '
-WIDTH=6
-HEIGHT=12
-CLEAR=
+W=10
+H=24
+CLEAR=$'\E[0m'
 GRID=()
-draw() {
+ORANGE=$'\E[31m'
+RED=$'\E[31m'
+GREEN=$'\E[32m'
+YELLOW=$'\E[33m'
+BLUE=$'\E[34m'
+MAGENTA=$'\E[35m'
+CYAN=$'\E[36m'
+COLORS=( "$RED" "$GREEN" "$BLUE" "$CYAN" "$YELLOW" "$MAGENTA" )
+tetronis=( I J L O S T Z )
+tetroni_I=(
+	''	''	''	''
+	"$CYAN"	"$CYAN"	"$CYAN"	"$CYAN"
+	''	''	''	''
+	''	''	''	''
+)
+tetroni_J=(
+	''	''	''	''
+	"$BLUE" ''	''	''
+	"$BLUE"	"$BLUE"	"$BLUE"	''
+	''	''	''	''
+) 
+tetroni_L=(
+	''		''		''		''
+	''		''		"$ORANGE"	''
+	"$ORANGE"	"$ORANGE"	"$ORANGE"	''
+	''		''		''		''
+) 
+tetroni_O=(
+	''	''		''		''
+	''	"$YELLOW"	"$YELLOW"	''
+	''	"$YELLOW"	"$YELLOW"	''
+	''	''		''		''
+)
+tetroni_S=(
+	''		''		''		''
+	''		"$GREEN"	"$GREEN"	''
+	"$GREEN"	"$GREEN"	''		''
+	''		''		''		''
+)
+tetroni_T=(
+	''		''		''		''
+	''		"$MAGENTA"	''		''
+	"$MAGENTA"	"$MAGENTA"	"$MAGENTA"	''
+	''		''		''		''
+)
+tetroni_Z=(
+	''	''	''	''
+	"$RED"	"$RED"	''	''
+	''	"$RED"	"$RED"	''
+	''	''	''	''
+)
+copyTetroni() {
+	local x=${1:0:1}
+	eval 'tetroni=("${tetroni_'"$x"'[@]}")'
+}
+newTetroni() {
+	local n=${#tetronis[@]}
+	copyTetroni "${tetronis[RANDOM%n]}"
+	Tx=$((W/2-2))
+	Ty=-1
+}
+
+render() {
+	local x y v line dx dy p
 	w=`tput cols`
 	h=`tput lines`
-	start=$(((w-WIDTH*${#BIT})/2))
-	for ((y=0; y < HEIGHT; y++)) ; do
-		printf %"$start"s '|'
-		for ((x=0; x < WIDTH; x++)) ; do
-			v=${GRID[x*HEIGHT+y]}
-			if [[ "$v" == "" ]] ; then
-				p=$VOID
+	start=$(((w-W*${#BIT})/2))
+	lines=()
+	for ((y=0; y < H; y++)) ; do
+		line='|'
+		for ((x=0; x < W; x++)) ; do
+			v=${GRID[x+y*W]}
+			dx=$((x-Tx))
+			dy=$((y-Ty))
+			if ((0 <= dx && dx < 4 && 0 <= dy && dy < 4)) && [[ "${tetroni[dy*4+dx]}" != "" ]] ; then
+				v=$'\E[1m'${tetroni[dx+dy*4]}
 				p=$BIT
 			else
-				p=$BIT
+				if [[ "$v" == "" ]] ; then
+					p=$VOID
+				else
+					p=$BIT
+				fi
 			fi
-			printf %s "$v" "$p" "$CLEAR"
+			line+=`printf %s "$v" "$p" "$CLEAR"`
 		done
-		echo '|'
+		line+='|'
+		lines+=("$line")
 	done
-	printf %"$start"s \\
-	for ((x = 0; x < WIDTH; x++)) ;do
-		printf %s "$BOT"
+	line='\'
+	for ((x = 0; x < W; x++)) ;do
+		line+=$BOT
 	done
-	echo /
+	lines+=("$line"/)
 }
-echo
+draw() {
+	for l in "${lines[@]}" ; do
+		printf %"$start"s ''
+		printf '%s\n' "$l"
+	done
+}
+display() {
+	render
+	for ((i = 0; i <= H; i++)) ; do
+		printf %s $'\E[A'
+	done
+	draw
+}
+fall() {
+	if (( Ty+4 >= H )) ; then
+		land
+	else
+		let Ty++
+	fi
+}
+land() {
+	local dy dx
+	dx=$((x-Tx))
+	dy=$((y-Ty))
+	for ((dx=0; dx < 4; dx++)) ; do
+		for ((dy=0; dy < 4; dy++)) ; do
+			x=$((dx+Tx))
+			y=$((dy+Ty))
+			v=${tetroni[dx+dy*4]}
+			if [[ "$v" != '' ]] ; then
+				GRID[x+y*W]=$v
+			fi
+		done
+	done
+	newTetroni
+}
+rotate() {
+	forceRotate
+}
+forceRotate() {
+	local csz=4
+	local s=$((csz-1))
+	local half=$(((csz+1)/2))
+	local hsz=$((csz/2))
+	local x y i pval val ox oy
+	for ((x = 0; x < half; x++)) ; do
+		for ((y = 0; y < hsz; y++)) ; do
+			val=${tetroni[x+y*4]}
+			for ((i = 0; i < 4; i++)) ; do
+				oy=$y
+				y=$x
+				x=$((s-oy))
+				pval=${tetroni[x+y*4]}
+				tetroni[x+y*4]=$val
+				val=$pval
+			done
+		done
+	done
+}
+RANDOM=1
+newTetroni
+render
 draw
+#for ((y=0; y < H; y++)) ; do
+#	for ((x=0; x < W; x++)) ; do
+#		GRID[x*H+y]=${COLORS[RANDOM%${#COLORS[@]}]}
+#		sleep .5
+#		display
+#	done
+#done
+(
+	while sleep .5 ; do
+		printf %s j
+	done &
+	while read -sN1 p; do 
+		case $p in
+		h)
+			printf %s "$p"
+		;;
+		j)
+			printf %s "$p"
+		;;
+		k)
+			printf %s "$p"
+		;;
+		l)
+			printf %s "$p"
+		;;
+		esac
+	done 
+) | while read -sN1 p; do
+	case $p in
+	h)
+		let Tx--
+	;;
+	j)
+		fall
+	;;
+	k)
+		rotate
+	;;
+	l)
+		let Tx++
+	;;
+
+	esac
+	display
+done
