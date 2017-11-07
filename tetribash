@@ -135,6 +135,26 @@ land() {
 		done
 	done
 	newTetroni
+	checkMatch
+}
+checkMatch() {
+	local x y dy dx
+	dy=$((H-1))
+	for ((y=H-1; y >= 0; y--)) ; do
+		rowMatch=1
+		for ((x=0; x < W; x++)) ; do
+			if ((y != dy)) ; then
+				GRID[x+dy*W]="${GRID[x+y*W]}"
+				GRID[x+y*W]=''
+			fi
+			if [[ "${GRID[x+dy*W]}" == '' ]] ; then
+				rowMatch=0
+			fi
+		done
+		if ((rowMatch != 1)) ; then
+			let dy--
+		fi
+	done
 }
 inBounds() {
 	local dy dx
@@ -201,7 +221,7 @@ forceRotate() {
 #RANDOM=1
 #for ((y=0; y < H; y++)) ; do
 #	for ((x=0; x < W; x++)) ; do
-#		GRID[x*H+y]=${COLORS[RANDOM%${#COLORS[@]}]}
+#		GRID[x+y*W]=${COLORS[RANDOM%${#COLORS[@]}]}
 #		sleep .5
 #		display
 #	done
