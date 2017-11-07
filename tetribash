@@ -1,0 +1,35 @@
+#!/bin/bash
+
+BIT='[]'
+BOT='--'
+VOID='  '
+WIDTH=6
+HEIGHT=12
+CLEAR=
+GRID=()
+draw() {
+	w=`tput cols`
+	h=`tput lines`
+	start=$(((w-WIDTH*${#BIT})/2))
+	for ((y=0; y < HEIGHT; y++)) ; do
+		printf %"$start"s '|'
+		for ((x=0; x < WIDTH; x++)) ; do
+			v=${GRID[x*HEIGHT+y]}
+			if [[ "$v" == "" ]] ; then
+				p=$VOID
+				p=$BIT
+			else
+				p=$BIT
+			fi
+			printf %s "$v" "$p" "$CLEAR"
+		done
+		echo '|'
+	done
+	printf %"$start"s \\
+	for ((x = 0; x < WIDTH; x++)) ;do
+		printf %s "$BOT"
+	done
+	echo /
+}
+echo
+draw
