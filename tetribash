@@ -64,7 +64,8 @@ copyTetroni() {
 }
 newTetroni() {
 	local n=${#tetronis[@]}
-	copyTetroni "${tetronis[RANDOM%n]}"
+	copyTetroni "$next"
+	next=${tetronis[RANDOM%n]}
 	Tx=$((W/2-2))
 	Ty=-1
 }
@@ -91,9 +92,20 @@ render() {
 					p=$BIT
 				fi
 			fi
-			line+=`printf %s "$v" "$p" "$CLEAR"`
+			line+=$v$p$CLEAR
 		done
 		line+='|'
+		if ((y < 4)) ; then
+			for ((x=0; x < 4; x++)) ; do
+				eval 'v=${tetroni_'"$next"'[x+y*4]}'
+				if [[ "$v" == "" ]] ; then
+					p=$VOID
+				else
+					p=$BIT
+				fi
+				line+=$'\E[1m'$v$p$CLEAR
+			done
+		fi
 		lines+=("$line")
 	done
 	line='\'
@@ -186,6 +198,12 @@ slide() {
 	fi
 	return 0
 }
+bringDown() {
+	while slide 0 2 ; do
+		:
+	done
+	slide 0 1
+}
 rotate() {
 	forceRotate 1
 	if ! inBounds ; then
@@ -227,14 +245,16 @@ forceRotate() {
 #	done
 #done
 newTetroni
+newTetroni
 render
 draw
+IFS=
 (
 	while sleep .5 ; do
 		printf %s j
 	done &
-	while read -sN1 p; do 
-		case $p in
+	while read -rsN1 p; do 
+		case "$p" in
 		h)
 			printf %s "$p"
 		;;
@@ -247,10 +267,16 @@ draw
 		l)
 			printf %s "$p"
 		;;
+		g)
+			printf %s "$p"
+		;;
+		' ')
+			printf g
+		;;
 		esac
 	done 
-) | while read -sN1 p; do
-	case $p in
+) | while read -rsN1 p; do
+	case "$p" in
 	h)
 		slide -1 0
 	;;
@@ -262,6 +288,9 @@ draw
 	;;
 	l)
 		slide 1 0
+	;;
+	g)
+		bringDown
 	;;
 
 	esac
