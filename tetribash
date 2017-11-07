@@ -116,10 +116,8 @@ display() {
 	draw
 }
 fall() {
-	if (( Ty+4 >= H )) ; then
+	if ! slide 0 1 ; then
 		land
-	else
-		let Ty++
 	fi
 }
 land() {
@@ -138,8 +136,41 @@ land() {
 	done
 	newTetroni
 }
+inBounds() {
+	local dy dx
+	dx=$((x-Tx))
+	dy=$((y-Ty))
+	for ((dx=0; dx < 4; dx++)) ; do
+		for ((dy=0; dy < 4; dy++)) ; do
+			x=$((dx+Tx))
+			y=$((dy+Ty))
+			v=${tetroni[dx+dy*4]}
+			if [[ "$v" != '' ]] ; then
+				if ((x < 0 || x >= W || y < 0 || y >= H)) || [[ "${GRID[x+y*W]}" != '' ]] ; then
+					return 1
+				fi
+			fi
+		done
+	done
+	return 0
+}
+slide() {
+	local dx=$1
+	local dy=$2
+	let Tx+=dx
+	let Ty+=dy
+	if ! inBounds ; then
+		let Tx-=dx
+		let Ty-=dy
+		return 1
+	fi
+	return 0
+}
 rotate() {
-	forceRotate
+	forceRotate 1
+	if ! inBounds ; then
+		forceRotate
+	fi
 }
 forceRotate() {
 	local csz=4
@@ -151,9 +182,15 @@ forceRotate() {
 		for ((y = 0; y < hsz; y++)) ; do
 			val=${tetroni[x+y*4]}
 			for ((i = 0; i < 4; i++)) ; do
-				oy=$y
-				y=$x
-				x=$((s-oy))
+				if (($# >= 1)) ; then
+					oy=$y
+					y=$x
+					x=$((s-oy))
+				else
+					ox=$x
+					x=$y
+					y=$((s-ox))
+				fi
 				pval=${tetroni[x+y*4]}
 				tetroni[x+y*4]=$val
 				val=$pval
@@ -161,10 +198,7 @@ forceRotate() {
 		done
 	done
 }
-RANDOM=1
-newTetroni
-render
-draw
+#RANDOM=1
 #for ((y=0; y < H; y++)) ; do
 #	for ((x=0; x < W; x++)) ; do
 #		GRID[x*H+y]=${COLORS[RANDOM%${#COLORS[@]}]}
@@ -172,6 +206,9 @@ draw
 #		display
 #	done
 #done
+newTetroni
+render
+draw
 (
 	while sleep .5 ; do
 		printf %s j
@@ -195,7 +232,7 @@ draw
 ) | while read -sN1 p; do
 	case $p in
 	h)
-		let Tx--
+		slide -1 0
 	;;
 	j)
 		fall
@@ -204,7 +241,7 @@ draw
 		rotate
 	;;
 	l)
-		let Tx++
+		slide 1 0
 	;;
 
 	esac
