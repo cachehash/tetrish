@@ -16,22 +16,24 @@ C_DOWN=$'\EOB'
 C_LEFT=$'\EOD'
 C_RIGHT=$'\EOC'
 
-BIT='[]'
-#BIT=$'\E[7m[]'
-BOT='--'
+BIT='🔳'
+BOT='──'
 VOID='  '
 
 W=10
 H=24
+paused=0
 
 CLEAR=$'\E[0m'
-ORANGE=$'\E[7;31m'
-RED=$'\E[7;31m'
-GREEN=$'\E[7;32m'
-YELLOW=$'\E[7;33m'
-BLUE=$'\E[7;34m'
-MAGENTA=$'\E[7;35m'
-CYAN=$'\E[7;36m'
+
+COLOR_PREFIX=$'\E[7m'
+ORANGE=$COLOR_PREFIX$'\E[31m'
+RED=$COLOR_PREFIX$'\E[31m'
+GREEN=$COLOR_PREFIX$'\E[32m'
+YELLOW=$COLOR_PREFIX$'\E[33m'
+BLUE=$COLOR_PREFIX$'\E[34m'
+MAGENTA=$COLOR_PREFIX$'\E[35m'
+CYAN=$COLOR_PREFIX$'\E[36m'
 
 COLORS=( "$RED" "$GREEN" "$BLUE" "$CYAN" "$YELLOW" "$MAGENTA" )
 
@@ -107,7 +109,7 @@ render() {
 	start=$(((w-W*${#BOT})/2))
 	lines=()
 	for ((y=0; y < H; y++)) ; do
-		line='|'
+		line='│'
 		for ((x=0; x < W; x++)) ; do
 			v=${GRID[x+y*W]}
 			dx=$((x-Tx))
@@ -126,9 +128,12 @@ render() {
 					p=$BIT
 				fi
 			fi
+			if ((paused == 1 )) ; then
+				v=
+			fi
 			line+=$v$p$CLEAR
 		done
-		line+='|'
+		line+='│'
 		if ((y < 4)) ; then
 			for ((x=0; x < 4; x++)) ; do
 				eval 'v=${tetroni_'"$next"'[x+y*4]}'
@@ -137,16 +142,19 @@ render() {
 				else
 					p=$BIT
 				fi
+				if ((paused == 1 )) ; then
+					v=
+				fi
 				line+=$'\E[1m'$v$p$CLEAR
 			done
 		fi
 		lines+=("$line")
 	done
-	line='\'
+	line='└'
 	for ((x = 0; x < W; x++)) ;do
 		line+=$BOT
 	done
-	lines+=("$line"/)
+	lines+=("$line"┘)
 }
 draw() {
 	local showed=0
@@ -280,14 +288,19 @@ forceRotate() {
 		done
 	done
 }
-#RANDOM=1
-#for ((y=0; y < H; y++)) ; do
-#	for ((x=0; x < W; x++)) ; do
-#		GRID[x+y*W]=${COLORS[RANDOM%${#COLORS[@]}]}
-#		sleep .5
-#		display
-#	done
-#done
+togglePause() {
+	local obit
+	if ((paused == 0)) ; then
+		paused=1
+		obit=$BIT
+		BIT=$VOID
+		display
+		BIT=$obit
+	else
+		paused=0
+		display
+	fi
+}
 newTetroni
 newTetroni
 render
@@ -321,6 +334,9 @@ IFS=
 		' '|"$C_DOWN")
 			printf G
 		;;
+		p)
+			printf p
+		;;
 		esac
 	done 
 ) | while read -rsN1 p; do
@@ -332,31 +348,41 @@ IFS=
 	else
 		skip=0
 	fi
-	case "$p" in
-	h)
-		slide -1 0
-	;;
-	j)
-		fall
-	;;
-	k)
-		rotate 1
-	;;
-	l)
-		slide 1 0
-	;;
-	G)
-		bringDown
-	;;
-	r)
-		rotate -1
-	;;
-
-	esac
+	if ((paused == 1)) ; then
+		if [[ "$p" == p ]] ; then
+			togglePause
+		fi
+	else
+		case "$p" in
+		h)
+			slide -1 0
+		;;
+		j)
+			fall
+		;;
+		k)
+			rotate 1
+		;;
+		l)
+			slide 1 0
+		;;
+		G)
+			bringDown
+		;;
+		r)
+			rotate -1
+		;;
+		p)
+			togglePause
+		;;
+		esac
+	fi
 	if (( skip == 1 && fs < MAX_FRAMESKIP )) ; then
 		let fs++
 	else
-		display
+		if ((paused == 0)) ; then
+			display
+		fi
 		fs=0
 	fi
 	date=`date +%s%3N`
