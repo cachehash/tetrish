@@ -1,25 +1,40 @@
 #!/bin/bash
 
+MAX_FRAMESKIP=3
+#if it takes this long or less to read input, assume it's
+#coming from the buffer and we need to frame
+#skip to catch up
+MAX_BUFF_WAIT=10
+
 UP=$'\E[A'
 DOWN=$'\E[B'
 LEFT=$'\E[D'
 RIGHT=$'\E[C'
+
+C_UP=$'\EOA'
+C_DOWN=$'\EOB'
+C_LEFT=$'\EOD'
+C_RIGHT=$'\EOC'
+
 BIT='[]'
-BIT=$'\E[7m[]'
+#BIT=$'\E[7m[]'
 BOT='--'
 VOID='  '
+
 W=10
 H=24
+
 CLEAR=$'\E[0m'
-GRID=()
-ORANGE=$'\E[31m'
-RED=$'\E[31m'
-GREEN=$'\E[32m'
-YELLOW=$'\E[33m'
-BLUE=$'\E[34m'
-MAGENTA=$'\E[35m'
-CYAN=$'\E[36m'
+ORANGE=$'\E[7;31m'
+RED=$'\E[7;31m'
+GREEN=$'\E[7;32m'
+YELLOW=$'\E[7;33m'
+BLUE=$'\E[7;34m'
+MAGENTA=$'\E[7;35m'
+CYAN=$'\E[7;36m'
+
 COLORS=( "$RED" "$GREEN" "$BLUE" "$CYAN" "$YELLOW" "$MAGENTA" )
+
 tetronis=( I J L O S T Z )
 tetroni_I=(
 	''	''	''	''
@@ -81,7 +96,12 @@ newTetroni() {
 }
 
 render() {
-	local x y v line dx dy p
+	local x y v line dx dy p bdy By
+	y=$Ty
+	bringDown
+	By=$Ty
+	Ty=$y
+
 	w=`tput cols`
 	h=`tput lines`
 	start=$(((w-W*${#BOT})/2))
@@ -92,8 +112,12 @@ render() {
 			v=${GRID[x+y*W]}
 			dx=$((x-Tx))
 			dy=$((y-Ty))
+			bdy=$((y-By))
 			if ((0 <= dx && dx < 4 && 0 <= dy && dy < 4)) && [[ "${tetroni[dy*4+dx]}" != "" ]] ; then
 				v=$'\E[1m'${tetroni[dx+dy*4]}
+				p=$BIT
+			elif ((0 <= dx && dx < 4 && 0 <= bdy && bdy < 4)) && [[ "${tetroni[bdy*4+dx]}" != "" ]] ; then
+				v=$'\E[1m'
 				p=$BIT
 			else
 				if [[ "$v" == "" ]] ; then
@@ -190,7 +214,7 @@ checkMatch() {
 	fi
 }
 inBounds() {
-	local dy dx
+	local dy dx x y v
 	dx=$((x-Tx))
 	dy=$((y-Ty))
 	for ((dx=0; dx < 4; dx++)) ; do
@@ -225,9 +249,9 @@ bringDown() {
 	done
 }
 rotate() {
-	forceRotate 1
+	forceRotate $1
 	if ! inBounds ; then
-		forceRotate
+		forceRotate $((0-$1))
 	fi
 }
 forceRotate() {
@@ -240,7 +264,7 @@ forceRotate() {
 		for ((y = 0; y < hsz; y++)) ; do
 			val=${tetroni[x+y*4]}
 			for ((i = 0; i < 4; i++)) ; do
-				if (($# >= 1)) ; then
+				if (($1 >= 1)) ; then
 					oy=$y
 					y=$x
 					x=$((s-oy))
@@ -285,18 +309,29 @@ IFS=
 		j|"$DOWN")
 			printf j
 		;;
-		k|"$UP")
+		k|"$UP"|"$C_RIGHT")
 			printf k
+		;;
+		r|"$C_UP"|"$C_LEFT")
+			printf r
 		;;
 		l|$RIGHT)
 			printf l
 		;;
-		' ')
+		' '|"$C_DOWN")
 			printf G
 		;;
 		esac
 	done 
 ) | while read -rsN1 p; do
+	#assume that if the delay was less than 100 ms we
+	#read input from buffer and therefore need to 
+	#frameskip
+	if ((`date +%s%3N` - date < MIN_BUFF_WAIT)) ; then
+		skip=1
+	else
+		skip=0
+	fi
 	case "$p" in
 	h)
 		slide -1 0
@@ -305,7 +340,7 @@ IFS=
 		fall
 	;;
 	k)
-		rotate
+		rotate 1
 	;;
 	l)
 		slide 1 0
@@ -313,7 +348,16 @@ IFS=
 	G)
 		bringDown
 	;;
+	r)
+		rotate -1
+	;;
 
 	esac
-	display
+	if (( skip == 1 && fs < MAX_FRAMESKIP )) ; then
+		let fs++
+	else
+		display
+		fs=0
+	fi
+	date=`date +%s%3N`
 done
