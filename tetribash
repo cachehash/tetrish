@@ -1,7 +1,11 @@
 #!/bin/bash
 
+UP=$'\E[A'
+DOWN=$'\E[B'
+LEFT=$'\E[D'
+RIGHT=$'\E[C'
 BIT='[]'
-BIT=$'\E[7m  '
+BIT=$'\E[7m[]'
 BOT='--'
 VOID='  '
 W=10
@@ -271,18 +275,22 @@ IFS=
 		printf j
 	done &
 	while read -rsN1 p; do 
+		if [[ "$p" == $'\E' ]] ; then
+			read -rsN2 ap
+			p+=$ap
+		fi
 		case "$p" in
-		h)
-			printf %s "$p"
+		h|"$LEFT")
+			printf h
 		;;
-		j)
-			printf %s "$p"
+		j|"$DOWN")
+			printf j
 		;;
-		k)
-			printf %s "$p"
+		k|"$UP")
+			printf k
 		;;
-		l)
-			printf %s "$p"
+		l|$RIGHT)
+			printf l
 		;;
 		' ')
 			printf G
