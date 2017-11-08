@@ -220,10 +220,9 @@ slide() {
 	return 0
 }
 bringDown() {
-	while slide 0 2 ; do
+	while slide 0 1 ; do
 		:
 	done
-	slide 0 1
 }
 rotate() {
 	forceRotate 1
