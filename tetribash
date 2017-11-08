@@ -68,6 +68,11 @@ newTetroni() {
 	next=${tetronis[RANDOM%n]}
 	Tx=$((W/2-2))
 	Ty=-1
+	if ! inBounds ;then
+		display
+		echo 'game over'
+		exit
+	fi
 }
 
 render() {
@@ -115,8 +120,14 @@ render() {
 	lines+=("$line"/)
 }
 draw() {
+	local showed=0
 	for l in "${lines[@]}" ; do
-		printf %"$start"s ''
+		if [[ "$showed" == 0 ]] ; then
+			printf %"$start"d "$score"00
+			showed=1
+		else
+			printf %"$start"s ''
+		fi
 		printf '%s\n' "$l"
 	done
 }
@@ -150,7 +161,7 @@ land() {
 	checkMatch
 }
 checkMatch() {
-	local x y dy dx
+	local x y dy dx matches
 	dy=$((H-1))
 	for ((y=H-1; y >= 0; y--)) ; do
 		rowMatch=1
@@ -165,8 +176,13 @@ checkMatch() {
 		done
 		if ((rowMatch != 1)) ; then
 			let dy--
+		else
+			let matches++
 		fi
 	done
+	if (( matches != 0 )) ; then
+		(( score += 2**(matches-1) ))
+	fi
 }
 inBounds() {
 	local dy dx
