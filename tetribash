@@ -16,24 +16,35 @@ C_DOWN=$'\EOB'
 C_LEFT=$'\EOD'
 C_RIGHT=$'\EOC'
 
+LIGHT=$'\E[1m'
+DARK=$'\E[2m'
+CLEAR=$'\E[0m'
+
 BIT='🔳'
 BOT='──'
 VOID='  '
+
+FALLING=
+PREVIEW=$FALLING
+LANDED=
+GHOST=$LIGHT
 
 W=10
 H=24
 paused=0
 
-CLEAR=$'\E[0m'
+join() {
+	sed -e 's%m\E\[%;%' <<<"$1"
+}
 
 COLOR_PREFIX=$'\E[7m'
-ORANGE=$COLOR_PREFIX$'\E[31m'
-RED=$COLOR_PREFIX$'\E[31m'
-GREEN=$COLOR_PREFIX$'\E[32m'
-YELLOW=$COLOR_PREFIX$'\E[33m'
-BLUE=$COLOR_PREFIX$'\E[34m'
-MAGENTA=$COLOR_PREFIX$'\E[35m'
-CYAN=$COLOR_PREFIX$'\E[36m'
+ORANGE=`join $COLOR_PREFIX$'\E[33m'`
+RED=`join $LIGHT$COLOR_PREFIX$'\E[31m'`
+GREEN=`join $LIGHT$COLOR_PREFIX$'\E[32m'`
+YELLOW=`join $LIGHT$COLOR_PREFIX$'\E[33m'`
+BLUE=`join $LIGHT$COLOR_PREFIX$'\E[34m'`
+MAGENTA=`join $LIGHT$COLOR_PREFIX$'\E[35m'`
+CYAN=`join $LIGHT$COLOR_PREFIX$'\E[36m'`
 
 COLORS=( "$RED" "$GREEN" "$BLUE" "$CYAN" "$YELLOW" "$MAGENTA" )
 
@@ -116,10 +127,10 @@ render() {
 			dy=$((y-Ty))
 			bdy=$((y-By))
 			if ((0 <= dx && dx < 4 && 0 <= dy && dy < 4)) && [[ "${tetroni[dy*4+dx]}" != "" ]] ; then
-				v=$'\E[1m'${tetroni[dx+dy*4]}
+				v=$FALLING${tetroni[dx+dy*4]}
 				p=$BIT
 			elif ((0 <= dx && dx < 4 && 0 <= bdy && bdy < 4)) && [[ "${tetroni[bdy*4+dx]}" != "" ]] ; then
-				v=$'\E[1m'
+				v=$GHOST
 				p=$BIT
 			else
 				if [[ "$v" == "" ]] ; then
@@ -145,7 +156,7 @@ render() {
 				if ((paused == 1 )) ; then
 					v=
 				fi
-				line+=$'\E[1m'$v$p$CLEAR
+				line+=$PREVIEW$v$p$CLEAR
 			done
 		fi
 		lines+=("$line")
@@ -170,9 +181,7 @@ draw() {
 }
 display() {
 	render
-	for ((i = 0; i <= H; i++)) ; do
-		printf %s $'\E[A'
-	done
+	tput cuu $((H+1))
 	draw
 }
 fall() {
@@ -309,6 +318,7 @@ IFS=
 (
 	while sleep .5 ; do
 		printf j
+		#printf $'\a' >&2
 	done &
 	while read -rsN1 p; do 
 		if [[ "$p" == $'\E' ]] ; then
