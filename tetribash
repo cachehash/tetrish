@@ -1,4 +1,7 @@
 #!/bin/bash
+#disable all the posix features that make unquoted vars dangerous
+set -f
+IFS=
 
 MAX_FRAMESKIP=3
 #if it takes this long or less to read input, assume it's
@@ -41,6 +44,18 @@ paused=0
 
 join() {
 	sed -e 's%m\E\[%;%' <<<"$1"
+}
+read_ch() {
+	local IFS
+	unset IFS
+	if [ -t 0 ] ; then
+	local read_ch_old=$(stty -g)
+		stty -icanon -echo
+		eval "$1"'=$(dd bs=1 count=1 2>/dev/null)'
+		stty $read_ch_old
+	else
+		eval "$1"'=$(dd bs=1 count=1 2>/dev/null)'
+	fi
 }
 
 COLOR_PREFIX=$'\E[7m'
@@ -128,7 +143,7 @@ render() {
 	for ((y=0; y < H; y++)) ; do
 		line='│'
 		for ((x=0; x < W; x++)) ; do
-			v=${GRID[x+y*W]}
+			eval 'v=$GRID_'${x}_$y
 			dx=$((x-Tx))
 			dy=$((y-Ty))
 			bdy=$((y-By))
@@ -205,7 +220,8 @@ land() {
 			y=$((dy+Ty))
 			v=${tetroni[dx+dy*4]}
 			if [[ "$v" != '' ]] ; then
-				GRID[x+y*W]=$v
+				#GRID[x+y*W]=$v
+				eval "GRID_${x}_$y="'$v'
 			fi
 		done
 	done
@@ -219,10 +235,13 @@ checkMatch() {
 		rowMatch=1
 		for ((x=0; x < W; x++)) ; do
 			if ((y != dy)) ; then
-				GRID[x+dy*W]="${GRID[x+y*W]}"
-				GRID[x+y*W]=''
+				#GRID[x+dy*W]="${GRID[x+y*W]}"
+				eval "GRID_${x}_$dy="'$GRID_'"${x}_$y"
+				#GRID[x+y*W]=''
+				eval "GRID_${x}_$y="
 			fi
-			if [[ "${GRID[x+dy*W]}" == '' ]] ; then
+			#if [[ "${GRID[x+dy*W]}" == '' ]] ; then
+			if eval '[[ "$GRID_'${x}_$dy'" == "" ]]' ; then
 				rowMatch=0
 			fi
 		done
@@ -246,7 +265,7 @@ inBounds() {
 			y=$((dy+Ty))
 			v=${tetroni[dx+dy*4]}
 			if [[ "$v" != '' ]] ; then
-				if ((x < 0 || x >= W || y < 0 || y >= H)) || [[ "${GRID[x+y*W]}" != '' ]] ; then
+				if ((x < 0 || x >= W || y < 0 || y >= H)) || eval '[[ "$GRID_'${x}_$y'" != "" ]]' ; then
 					return 1
 				fi
 			fi
@@ -326,7 +345,7 @@ IFS=
 		printf j
 		#printf $'\a' >&2
 	done &
-	while read -rsN1 p; do 
+	while read_ch p; do 
 		if [[ "$p" == $'\E' ]] ; then
 			read -rsN2 ap
 			p+=$ap
@@ -355,7 +374,7 @@ IFS=
 		;;
 		esac
 	done 
-) | while read -rsN1 p; do
+) | while read_ch p; do
 	#assume that if the delay was less than 100 ms we
 	#read input from buffer and therefore need to 
 	#frameskip
