@@ -347,7 +347,9 @@ IFS=
 	done &
 	while read_ch p; do 
 		if [[ "$p" == $'\E' ]] ; then
-			read -rsN2 ap
+			read_ch ap
+			p+=$ap
+			read_ch ap
 			p+=$ap
 		fi
 		case "$p" in
