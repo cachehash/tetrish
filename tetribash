@@ -21,7 +21,13 @@ DARK=$'\E[2m'
 CLEAR=$'\E[0m'
 
 BIT='🔳'
+BIT='[]'
 BOT='──'
+_J='┘'
+L_='└'
+_J=/
+L_=\\
+BOT='--'
 VOID='  '
 
 FALLING=
@@ -161,11 +167,11 @@ render() {
 		fi
 		lines+=("$line")
 	done
-	line='└'
+	line=$L_
 	for ((x = 0; x < W; x++)) ;do
 		line+=$BOT
 	done
-	lines+=("$line"┘)
+	lines+=("$line$_J")
 }
 draw() {
 	local showed=0
