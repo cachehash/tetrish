@@ -80,10 +80,14 @@ tetroni() {
 	done
 }
 numTetronis=7
+numTetronisM1=6
 tetronis=( I J L O S T Z )
+getRandom() {
+	shuf -i 0-"$1" -n 1
+}
 getRandTetroni() {
-	local r=$RANDOM
-	case $((r%numTetronis)) in
+	r=`getRandom $numTetronisM1`
+	case $r in
 	0)
 		echo I
 	;;
