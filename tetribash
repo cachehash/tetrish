@@ -69,71 +69,92 @@ BLUE=`join $LIGHT$COLOR_PREFIX$'\E[34m'`
 MAGENTA=`join $LIGHT$COLOR_PREFIX$'\E[35m'`
 CYAN=`join $LIGHT$COLOR_PREFIX$'\E[36m'`
 
-COLORS=( "$RED" "$GREEN" "$BLUE" "$CYAN" "$YELLOW" "$MAGENTA" )
-
 tetroni() {
 	local x y z
 	z=2
-	for ((x = 0; x < 4; x++)) ; do
-		for ((y = 0; y < 4; y++)) ; do
-			eval 'tetroni_'$1_${x}_$y'=$'$z
+	for ((x = 0; x < T_SZ; x++)) ; do
+		for ((y = 0; y < T_SZ; y++)) ; do
+			eval 'tetroni_'$1_${x}_$y'=${'$z'}'
 			let z++
 		done
 	done
 }
+numTetronis=7
 tetronis=( I J L O S T Z )
-tetroni_I=(
+getRandTetroni() {
+	local r=$RANDOM
+	case $((r%numTetronis)) in
+	0)
+		echo I
+	;;
+	1)
+		echo J
+	;;
+	2)
+		echo L
+	;;
+	3)
+		echo O
+	;;
+	4)
+		echo S
+	;;
+	5)
+		echo T
+	;;
+	6)
+		echo Z
+	;;
+	esac
+}
+tetroni I \
+	''	''	''	''	\
+	"$CYAN"	"$CYAN"	"$CYAN"	"$CYAN"	\
+	''	''	''	''	\
 	''	''	''	''
-	"$CYAN"	"$CYAN"	"$CYAN"	"$CYAN"
+tetroni J \
+	''	''	''	''	\
+	"$BLUE" ''	''	''	\
+	"$BLUE"	"$BLUE"	"$BLUE"	''	\
 	''	''	''	''
-	''	''	''	''
-)
-tetroni_J=(
-	''	''	''	''
-	"$BLUE" ''	''	''
-	"$BLUE"	"$BLUE"	"$BLUE"	''
-	''	''	''	''
-) 
-tetroni_L=(
+tetroni L \
+	''		''		''		''	\
+	''		''		"$ORANGE"	''	\
+	"$ORANGE"	"$ORANGE"	"$ORANGE"	''	\
 	''		''		''		''
-	''		''		"$ORANGE"	''
-	"$ORANGE"	"$ORANGE"	"$ORANGE"	''
-	''		''		''		''
-) 
-tetroni_O=(
+tetroni O \
+	''	''		''		''	\
+	''	"$YELLOW"	"$YELLOW"	''	\
+	''	"$YELLOW"	"$YELLOW"	''	\
 	''	''		''		''
-	''	"$YELLOW"	"$YELLOW"	''
-	''	"$YELLOW"	"$YELLOW"	''
-	''	''		''		''
-)
-tetroni_S=(
+tetroni S \
+	''		''		''		''	\
+	''		"$GREEN"	"$GREEN"	''	\
+	"$GREEN"	"$GREEN"	''		''	\
 	''		''		''		''
-	''		"$GREEN"	"$GREEN"	''
-	"$GREEN"	"$GREEN"	''		''
+tetroni T \
+	''		''		''		''	\
+	''		"$MAGENTA"	''		''	\
+	"$MAGENTA"	"$MAGENTA"	"$MAGENTA"	''	\
 	''		''		''		''
-)
-tetroni_T=(
-	''		''		''		''
-	''		"$MAGENTA"	''		''
-	"$MAGENTA"	"$MAGENTA"	"$MAGENTA"	''
-	''		''		''		''
-)
-tetroni_Z=(
+tetroni Z \
+	''	''	''	''	\
+	"$RED"	"$RED"	''	''	\
+	''	"$RED"	"$RED"	''	\
 	''	''	''	''
-	"$RED"	"$RED"	''	''
-	''	"$RED"	"$RED"	''
-	''	''	''	''
-)
 copyTetroni() {
-	local x=${1:0:1}
-	eval 'tetroni=("${tetroni_'"$x"'[@]}")'
+	local x y
+	for ((x = 0; x < T_SZ; x++)) ; do
+		for ((y = 0; y < T_SZ; y++)) ; do
+			eval 'tetroni_'${x}_$y'=$tetroni_'$1_${x}_$y
+		done
+	done
 }
 newTetroni() {
-	local n=${#tetronis[@]}
 	copyTetroni "$next"
-	next=${tetronis[RANDOM%n]}
+	next=`getRandTetroni`
 	Tx=$((W/2-2))
-	Ty=-1
+	Ty=0
 	if ! inBounds ;then
 		display
 		echo 'game over'
@@ -159,10 +180,10 @@ render() {
 			dx=$((x-Tx))
 			dy=$((y-Ty))
 			bdy=$((y-By))
-			if ((0 <= dx && dx < T_SZ && 0 <= dy && dy < T_SZ)) && [[ "${tetroni[dy*T_SZ+dx]}" != "" ]] ; then
-				v=$FALLING${tetroni[dx+dy*T_SZ]}
+			if ((0 <= dx && dx < T_SZ && 0 <= dy && dy < T_SZ)) && eval '[[ "$tetroni_'${dx}_$dy'" != "" ]]' ; then
+				eval 'v=$FALLING$tetroni_'${dx}_$dy
 				p=$BIT
-			elif ((0 <= dx && dx < T_SZ && 0 <= bdy && bdy < T_SZ)) && [[ "${tetroni[bdy*T_SZ+dx]}" != "" ]] ; then
+			elif ((0 <= dx && dx < T_SZ && 0 <= bdy && bdy < T_SZ)) && eval '[[ "$tetroni_'${dx}_$bdy'" != "" ]]' ; then
 				v=$GHOST
 				p=$BIT
 			else
@@ -180,7 +201,7 @@ render() {
 		line+='│'
 		if ((y < T_SZ)) ; then
 			for ((x=0; x < T_SZ; x++)) ; do
-				eval 'v=${tetroni_'"$next"'[x+y*T_SZ]}'
+				eval 'v=$tetroni_'"${next}_${x}_$y"
 				if [[ "$v" == "" ]] ; then
 					p=$VOID
 				else
@@ -230,7 +251,7 @@ land() {
 		for ((dy=0; dy < T_SZ; dy++)) ; do
 			x=$((dx+Tx))
 			y=$((dy+Ty))
-			v=${tetroni[dx+dy*T_SZ]}
+			eval 'v=$tetroni_'${dx}_$dy
 			if [[ "$v" != '' ]] ; then
 				#GRID[x+y*W]=$v
 				eval "GRID_${x}_$y="'$v'
@@ -247,12 +268,9 @@ checkMatch() {
 		rowMatch=1
 		for ((x=0; x < W; x++)) ; do
 			if ((y != dy)) ; then
-				#GRID[x+dy*W]="${GRID[x+y*W]}"
 				eval "GRID_${x}_$dy="'$GRID_'"${x}_$y"
-				#GRID[x+y*W]=''
 				eval "GRID_${x}_$y="
 			fi
-			#if [[ "${GRID[x+dy*W]}" == '' ]] ; then
 			if eval '[[ "$GRID_'${x}_$dy'" == "" ]]' ; then
 				rowMatch=0
 			fi
@@ -275,7 +293,7 @@ inBounds() {
 		for ((dy=0; dy < T_SZ; dy++)) ; do
 			x=$((dx+Tx))
 			y=$((dy+Ty))
-			v=${tetroni[dx+dy*T_SZ]}
+			eval 'v=$tetroni_'${dx}_$dy
 			if [[ "$v" != '' ]] ; then
 				if ((x < 0 || x >= W || y < 0 || y >= H)) || eval '[[ "$GRID_'${x}_$y'" != "" ]]' ; then
 					return 1
@@ -316,7 +334,7 @@ forceRotate() {
 	local x y i pval val ox oy
 	for ((x = 0; x < half; x++)) ; do
 		for ((y = 0; y < hsz; y++)) ; do
-			val=${tetroni[x+y*T_SZ]}
+			eval 'val=$tetroni_'${x}_$y
 			for ((i = 0; i < 4; i++)) ; do
 				if (($1 >= 1)) ; then
 					oy=$y
@@ -327,8 +345,8 @@ forceRotate() {
 					x=$y
 					y=$((s-ox))
 				fi
-				pval=${tetroni[x+y*T_SZ]}
-				tetroni[x+y*T_SZ]=$val
+				eval 'pval=$tetroni_'${x}_$y
+				eval 'tetroni_'${x}_$y'=$val'
 				val=$pval
 			done
 		done
@@ -347,7 +365,7 @@ togglePause() {
 		display
 	fi
 }
-newTetroni
+next=`getRandTetroni`
 newTetroni
 render
 draw
