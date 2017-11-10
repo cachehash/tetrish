@@ -23,15 +23,16 @@ LIGHT=$'\E[1m'
 DARK=$'\E[2m'
 CLEAR=$'\E[0m'
 
+VOID='  '
 BIT='🔳'
-BIT='[]'
 BOT='──'
 _J='┘'
 L_='└'
-_J=/
-L_=\\
-BOT='--'
-VOID='  '
+
+#BIT='[]'
+#BOT='--'
+#_J=/
+#L_=\\
 
 FALLING=
 PREVIEW=$FALLING
@@ -40,16 +41,17 @@ GHOST=$LIGHT
 
 W=10
 H=24
+T_SZ=4
 paused=0
 
 join() {
-	sed -e 's%m\E\[%;%' <<<"$1"
+	echo "$1" | sed -e 's%m\E\[%;%'
 }
 read_ch() {
 	local IFS
 	unset IFS
 	if [ -t 0 ] ; then
-	local read_ch_old=$(stty -g)
+		local read_ch_old=`stty -g`
 		stty -icanon -echo
 		eval "$1"'=$(dd bs=1 count=1 2>/dev/null)'
 		stty $read_ch_old
@@ -69,6 +71,16 @@ CYAN=`join $LIGHT$COLOR_PREFIX$'\E[36m'`
 
 COLORS=( "$RED" "$GREEN" "$BLUE" "$CYAN" "$YELLOW" "$MAGENTA" )
 
+tetroni() {
+	local x y z
+	z=2
+	for ((x = 0; x < 4; x++)) ; do
+		for ((y = 0; y < 4; y++)) ; do
+			eval 'tetroni_'$1_${x}_$y'=$'$z
+			let z++
+		done
+	done
+}
 tetronis=( I J L O S T Z )
 tetroni_I=(
 	''	''	''	''
@@ -147,10 +159,10 @@ render() {
 			dx=$((x-Tx))
 			dy=$((y-Ty))
 			bdy=$((y-By))
-			if ((0 <= dx && dx < 4 && 0 <= dy && dy < 4)) && [[ "${tetroni[dy*4+dx]}" != "" ]] ; then
-				v=$FALLING${tetroni[dx+dy*4]}
+			if ((0 <= dx && dx < T_SZ && 0 <= dy && dy < T_SZ)) && [[ "${tetroni[dy*T_SZ+dx]}" != "" ]] ; then
+				v=$FALLING${tetroni[dx+dy*T_SZ]}
 				p=$BIT
-			elif ((0 <= dx && dx < 4 && 0 <= bdy && bdy < 4)) && [[ "${tetroni[bdy*4+dx]}" != "" ]] ; then
+			elif ((0 <= dx && dx < T_SZ && 0 <= bdy && bdy < T_SZ)) && [[ "${tetroni[bdy*T_SZ+dx]}" != "" ]] ; then
 				v=$GHOST
 				p=$BIT
 			else
@@ -166,9 +178,9 @@ render() {
 			line+=$v$p$CLEAR
 		done
 		line+='│'
-		if ((y < 4)) ; then
-			for ((x=0; x < 4; x++)) ; do
-				eval 'v=${tetroni_'"$next"'[x+y*4]}'
+		if ((y < T_SZ)) ; then
+			for ((x=0; x < T_SZ; x++)) ; do
+				eval 'v=${tetroni_'"$next"'[x+y*T_SZ]}'
 				if [[ "$v" == "" ]] ; then
 					p=$VOID
 				else
@@ -214,11 +226,11 @@ land() {
 	local dy dx
 	dx=$((x-Tx))
 	dy=$((y-Ty))
-	for ((dx=0; dx < 4; dx++)) ; do
-		for ((dy=0; dy < 4; dy++)) ; do
+	for ((dx=0; dx < T_SZ; dx++)) ; do
+		for ((dy=0; dy < T_SZ; dy++)) ; do
 			x=$((dx+Tx))
 			y=$((dy+Ty))
-			v=${tetroni[dx+dy*4]}
+			v=${tetroni[dx+dy*T_SZ]}
 			if [[ "$v" != '' ]] ; then
 				#GRID[x+y*W]=$v
 				eval "GRID_${x}_$y="'$v'
@@ -259,11 +271,11 @@ inBounds() {
 	local dy dx x y v
 	dx=$((x-Tx))
 	dy=$((y-Ty))
-	for ((dx=0; dx < 4; dx++)) ; do
-		for ((dy=0; dy < 4; dy++)) ; do
+	for ((dx=0; dx < T_SZ; dx++)) ; do
+		for ((dy=0; dy < T_SZ; dy++)) ; do
 			x=$((dx+Tx))
 			y=$((dy+Ty))
-			v=${tetroni[dx+dy*4]}
+			v=${tetroni[dx+dy*T_SZ]}
 			if [[ "$v" != '' ]] ; then
 				if ((x < 0 || x >= W || y < 0 || y >= H)) || eval '[[ "$GRID_'${x}_$y'" != "" ]]' ; then
 					return 1
@@ -297,14 +309,14 @@ rotate() {
 	fi
 }
 forceRotate() {
-	local csz=4
+	local csz=$T_SZ
 	local s=$((csz-1))
 	local half=$(((csz+1)/2))
 	local hsz=$((csz/2))
 	local x y i pval val ox oy
 	for ((x = 0; x < half; x++)) ; do
 		for ((y = 0; y < hsz; y++)) ; do
-			val=${tetroni[x+y*4]}
+			val=${tetroni[x+y*T_SZ]}
 			for ((i = 0; i < 4; i++)) ; do
 				if (($1 >= 1)) ; then
 					oy=$y
@@ -315,8 +327,8 @@ forceRotate() {
 					x=$y
 					y=$((s-ox))
 				fi
-				pval=${tetroni[x+y*4]}
-				tetroni[x+y*4]=$val
+				pval=${tetroni[x+y*T_SZ]}
+				tetroni[x+y*T_SZ]=$val
 				val=$pval
 			done
 		done
