@@ -2,6 +2,10 @@
 #disable all the posix features that make unquoted vars dangerous
 set -f
 IFS=
+if ! [ -z "$ZSH_VERSION" ] ; then
+	setopt sh_word_split
+fi
+
 
 ENDL='
 '
@@ -30,11 +34,15 @@ BIT='🔳'
 BOT='──'
 _J='┘'
 L_='└'
+WALL='│'
+CW=2
 
 #BIT='[]'
 #BOT='--'
 #_J=/
 #L_=\\
+#WALL='|'
+#CW=2
 
 FALLING=
 PREVIEW=$FALLING
@@ -189,7 +197,7 @@ render() {
 	unset lines
 	y=0
 	while [ "$y" -lt "$H" ] ; do
-		line='│'
+		line=$WALL
 		x=0
 		while [ "$x" -lt "$W" ] ; do
 			eval 'v=$GRID_'${x}_$y
@@ -215,7 +223,7 @@ render() {
 			line=$line$v$p$CLEAR
 		x=$((x+1))
 		done
-		line=$line'│'
+		line=$line$WALL
 		if [ "$y" -lt "$T_SZ" ] ; then
 			x=0
 			while [ "$x" -lt "$T_SZ" ] ; do
@@ -246,8 +254,7 @@ render() {
 draw() {
 	local showed=0
 	local IFS=$ENDL
-	local start=$(((w-W*${#BOT})/2))
-	echo $w - $W \* ${#BOT} = $start > log
+	local start=$(((w-W*CW)/2))
 	for l in $lines ; do
 		if [ "$showed" = 0 ] ; then
 			printf %"$start"d "$score"00
