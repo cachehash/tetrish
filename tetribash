@@ -83,8 +83,11 @@ numTetronis=7
 numTetronisM1=6
 tetronis=( I J L O S T Z )
 getRandom() {
-	#shuf -i 0-"$1" -n 1
-	echo $((RANDOM%$1))
+	shuf -i 0-"$1" -n 1
+	#echo $((RANDOM%$1))
+}
+sleep() {
+	command sleep "$1"
 }
 getRandTetroni() {
 	r=`getRandom $numTetronisM1`
@@ -376,7 +379,7 @@ render
 draw
 IFS=
 (
-	while sleep 1 ; do
+	while sleep .5 ; do
 		printf j
 		#printf $'\a' >&2
 	done &
