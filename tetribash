@@ -83,7 +83,8 @@ numTetronis=7
 numTetronisM1=6
 tetronis=( I J L O S T Z )
 getRandom() {
-	shuf -i 0-"$1" -n 1
+	#shuf -i 0-"$1" -n 1
+	echo $((RANDOM%$1))
 }
 getRandTetroni() {
 	r=`getRandom $numTetronisM1`
@@ -375,7 +376,7 @@ render
 draw
 IFS=
 (
-	while sleep .5 ; do
+	while sleep 1 ; do
 		printf j
 		#printf $'\a' >&2
 	done &
@@ -414,11 +415,12 @@ IFS=
 	#assume that if the delay was less than 100 ms we
 	#read input from buffer and therefore need to 
 	#frameskip
-	if ((`date +%s%3N` - date < MIN_BUFF_WAIT)) ; then
-		skip=1
-	else
-		skip=0
-	fi
+	skip=0
+	#if ((`date +%s%3N` - date < MIN_BUFF_WAIT)) ; then
+	#	skip=1
+	#else
+	#	skip=0
+	#fi
 	if ((paused == 1)) ; then
 		if [[ "$p" == p ]] ; then
 			togglePause
