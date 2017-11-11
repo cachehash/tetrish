@@ -3,25 +3,27 @@
 set -f
 IFS=
 
+ENDL='
+'
 MAX_FRAMESKIP=3
 #if it takes this long or less to read input, assume it's
 #coming from the buffer and we need to frame
 #skip to catch up
 MAX_BUFF_WAIT=10
 
-UP=$'\E[A'
-DOWN=$'\E[B'
-LEFT=$'\E[D'
-RIGHT=$'\E[C'
+UP='[A'
+DOWN='[B'
+LEFT='[D'
+RIGHT='[C'
 
-C_UP=$'\EOA'
-C_DOWN=$'\EOB'
-C_LEFT=$'\EOD'
-C_RIGHT=$'\EOC'
+C_UP='OA'
+C_DOWN='OB'
+C_LEFT='OD'
+C_RIGHT='OC'
 
-LIGHT=$'\E[1m'
-DARK=$'\E[2m'
-CLEAR=$'\E[0m'
+LIGHT='[1m'
+DARK='[2m'
+CLEAR='[0m'
 
 VOID='  '
 BIT='🔳'
@@ -44,9 +46,6 @@ H=24
 T_SZ=4
 paused=0
 
-join() {
-	echo "$1" | sed -e 's%m\E\[%;%'
-}
 read_ch() {
 	local IFS
 	unset IFS
@@ -60,14 +59,14 @@ read_ch() {
 	fi
 }
 
-COLOR_PREFIX=$'\E[7m'
-ORANGE=`join $COLOR_PREFIX$'\E[33m'`
-RED=`join $LIGHT$COLOR_PREFIX$'\E[31m'`
-GREEN=`join $LIGHT$COLOR_PREFIX$'\E[32m'`
-YELLOW=`join $LIGHT$COLOR_PREFIX$'\E[33m'`
-BLUE=`join $LIGHT$COLOR_PREFIX$'\E[34m'`
-MAGENTA=`join $LIGHT$COLOR_PREFIX$'\E[35m'`
-CYAN=`join $LIGHT$COLOR_PREFIX$'\E[36m'`
+COLOR_PREFIX='[7m'
+ORANGE=$COLOR_PREFIX'[33m'
+RED=$LIGHT$COLOR_PREFIX'[31m'
+GREEN=$LIGHT$COLOR_PREFIX'[32m'
+YELLOW=$LIGHT$COLOR_PREFIX'[33m'
+BLUE=$LIGHT$COLOR_PREFIX'[34m'
+MAGENTA=$LIGHT$COLOR_PREFIX'[35m'
+CYAN=$LIGHT$COLOR_PREFIX'[36m'
 
 tetroni() {
 	local x y z
@@ -187,7 +186,6 @@ render() {
 
 	w=`tput cols`
 	h=`tput lines`
-	start=$(((w-W*${#BOT})/2))
 	unset lines
 	y=0
 	while [ "$y" -lt "$H" ] ; do
@@ -198,57 +196,60 @@ render() {
 			dx=$((x-Tx))
 			dy=$((y-Ty))
 			bdy=$((y-By))
-			if ((0 <= dx && dx < T_SZ && 0 <= dy && dy < T_SZ)) && eval '[[ "$tetroni_'${dx}_$dy'" != "" ]]' ; then
+			if [ 0 -le "$dx" ] && [ "$dx" -lt "$T_SZ" ] && [ 0 -le "$dy" ] && [ "$dy" -lt "$T_SZ" ] && eval '[ "$tetroni_'${dx}_$dy'" != "" ]' ; then
 				eval 'v=$FALLING$tetroni_'${dx}_$dy
 				p=$BIT
-			elif ((0 <= dx && dx < T_SZ && 0 <= bdy && bdy < T_SZ)) && eval '[[ "$tetroni_'${dx}_$bdy'" != "" ]]' ; then
+			elif [ 0 -le "$dx" ] && [ "$dx" -lt "$T_SZ" ] && [ 0 -le "$bdy" ] && [ "$bdy" -lt "$T_SZ" ] && eval '[ "$tetroni_'${dx}_$bdy'" != "" ]' ; then
 				v=$GHOST
 				p=$BIT
 			else
-				if [[ "$v" == "" ]] ; then
+				if [ "$v" = "" ] ; then
 					p=$VOID
 				else
 					p=$BIT
 				fi
 			fi
-			if ((paused == 1 )) ; then
+			if [ "$paused" = 1 ] ; then
 				v=
 			fi
-			line+=$v$p$CLEAR
+			line=$line$v$p$CLEAR
 		x=$((x+1))
 		done
-		line+='│'
+		line=$line'│'
 		if [ "$y" -lt "$T_SZ" ] ; then
 			x=0
 			while [ "$x" -lt "$T_SZ" ] ; do
 				eval 'v=$tetroni_'"${next}_${x}_$y"
-				if [[ "$v" == "" ]] ; then
+				if [ "$v" = "" ] ; then
 					p=$VOID
 				else
 					p=$BIT
 				fi
-				if ((paused == 1 )) ; then
+				if [ "$paused" = 1 ] ; then
 					v=
 				fi
-				line+=$PREVIEW$v$p$CLEAR
+				line=$line$PREVIEW$v$p$CLEAR
 			x=$((x+1))
 			done
 		fi
-		lines+=("$line")
+		lines=$lines$line$ENDL
 	y=$((y+1))
 	done
 	line=$L_
 	x=0
 	while [ "$x" -lt "$W" ] ; do
-		line+=$BOT
+		line=$line$BOT
 		x=$((x+1))
 	done
-	lines+=("$line$_J")
+	lines=$lines$line$_J
 }
 draw() {
 	local showed=0
-	for l in "${lines[@]}" ; do
-		if [ "$showed" == 0 ] ; then
+	local IFS=$ENDL
+	local start=$(((w-W*${#BOT})/2))
+	echo $w - $W \* ${#BOT} = $start > log
+	for l in $lines ; do
+		if [ "$showed" = 0 ] ; then
 			printf %"$start"d "$score"00
 			showed=1
 		else
@@ -278,7 +279,7 @@ land() {
 			x=$((dx+Tx))
 			y=$((dy+Ty))
 			eval 'v=$tetroni_'${dx}_$dy
-			if [[ "$v" != '' ]] ; then
+			if [ "$v" != '' ] ; then
 				#GRID[x+y*W]=$v
 				eval "GRID_${x}_$y="'$v'
 			fi
@@ -290,19 +291,20 @@ land() {
 	checkMatch
 }
 checkMatch() {
-	local x y dy dx matches
+	local x y dy dx matches s
 	matches=0
+	s=1
 	dy=$((H-1))
 	y=$dy
 	while [ "$y" -ge 0 ] ; do
 		rowMatch=1
 		x=0
 		while [ "$x" -lt "$W" ] ; do
-			if ((y != dy)) ; then
+			if [ "$y" != "$dy" ] ; then
 				eval "GRID_${x}_$dy="'$GRID_'"${x}_$y"
 				eval "GRID_${x}_$y="
 			fi
-			if eval '[[ "$GRID_'${x}_$dy'" == "" ]]' ; then
+			if eval '[ "$GRID_'${x}_$dy'" = "" ]' ; then
 				rowMatch=0
 			fi
 			x=$((x+1))
@@ -315,7 +317,11 @@ checkMatch() {
 		y=$((y-1))
 	done
 	if [ "$matches" -ne 0 ] ; then
-		score=$((score + 2**(matches-1) ))
+		while [ "$matches" -gt 1 ] ; do
+			s=$((s*2))
+			matches=$((matches-1))
+		done
+		score=$((score + s))
 	fi
 }
 inBounds() {
@@ -327,9 +333,8 @@ inBounds() {
 			x=$((dx+Tx))
 			y=$((dy+Ty))
 			eval 'v=$tetroni_'${dx}_$dy
-			if [[ "$v" != '' ]] ; then
-				#if [ "$x" -le 0 ] || [ "$x" -ge "$W" ] || [ "$y" -le 0 ] || [ "$y" -ge "$H" ] || eval '[[ "$GRID_'${x}_$y'" != "" ]]' ; then
-				if ((x < 0 || x >= W || y < 0 || y >= H)) || eval '[[ "$GRID_'${x}_$y'" != "" ]]' ; then
+			if [ "$v" != '' ] ; then
+				if [ "$x" -lt 0 ] || [ "$x" -ge "$W" ] || [ "$y" -lt 0 ] || [ "$y" -ge "$H" ] || eval '[ "$GRID_'${x}_$y'" != "" ]' ; then
 					return 1
 				fi
 			fi
@@ -342,11 +347,11 @@ inBounds() {
 slide() {
 	local dx=$1
 	local dy=$2
-	let Tx+=dx
-	let Ty+=dy
+	Tx=$((Tx+dx))
+	Ty=$((Ty+dy))
 	if ! inBounds ; then
-		let Tx-=dx
-		let Ty-=dy
+		Tx=$((Tx-dx))
+		Ty=$((Ty-dy))
 		return 1
 	fi
 	return 0
@@ -374,7 +379,7 @@ forceRotate() {
 		while [ "$y" -lt "$hsz" ] ; do
 			eval 'val=$tetroni_'${x}_$y
 			for i in 0 1 2 3 ; do
-				if (($1 >= 1)) ; then
+				if [ "$1" -ge 1 ] ; then
 					oy=$y
 					y=$x
 					x=$((s-oy))
@@ -394,7 +399,7 @@ forceRotate() {
 }
 togglePause() {
 	local obit
-	if ((paused == 0)) ; then
+	if [ "$paused" = 0 ] ; then
 		paused=1
 		obit=$BIT
 		BIT=$VOID
@@ -416,11 +421,11 @@ IFS=
 		#printf $'\a' >&2
 	done &
 	while read_ch p; do 
-		if [[ "$p" == $'\E' ]] ; then
+		if [ "$p" = '' ] ; then
 			read_ch ap
-			p+=$ap
+			p=$p$ap
 			read_ch ap
-			p+=$ap
+			p=$p$ap
 		fi
 		case "$p" in
 		h|"$LEFT")
@@ -456,8 +461,8 @@ IFS=
 	#else
 	#	skip=0
 	#fi
-	if ((paused == 1)) ; then
-		if [[ "$p" == p ]] ; then
+	if [ "$paused" = 1 ] ; then
+		if [ "$p" = p ] ; then
 			togglePause
 		fi
 	else
@@ -485,10 +490,10 @@ IFS=
 		;;
 		esac
 	fi
-	if (( skip == 1 && fs < MAX_FRAMESKIP )) ; then
-		let fs++
+	if [ "$skip" = 1 ] && [ "$fs" -lt "$MAX_FRAMESKIP" ] ; then
+		fs=$((fs+1))
 	else
-		if ((paused == 0)) ; then
+		if [ "$paused" = 0 ] ; then
 			display
 		fi
 		fs=0
