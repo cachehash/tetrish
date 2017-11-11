@@ -72,16 +72,20 @@ CYAN=`join $LIGHT$COLOR_PREFIX$'\E[36m'`
 tetroni() {
 	local x y z
 	z=2
-	for ((x = 0; x < T_SZ; x++)) ; do
-		for ((y = 0; y < T_SZ; y++)) ; do
+	x=0
+	while [ "$x" -lt "$T_SZ" ] ; do
+		y=0
+		while [ "$y" -lt "$T_SZ" ] ; do
 			eval 'tetroni_'$1_${x}_$y'=${'$z'}'
-			let z++
+			z=$((z+1))
+			y=$((y+1))
 		done
+		x=$((x+1))
 	done
 }
 numTetronis=7
 numTetronisM1=6
-tetronis=( I J L O S T Z )
+#tetronis=( I J L O S T Z )
 getRandom() {
 	shuf -i 0-"$1" -n 1
 	#echo $((RANDOM%$1))
@@ -152,10 +156,14 @@ tetroni Z \
 	''	''	''	''
 copyTetroni() {
 	local x y
-	for ((x = 0; x < T_SZ; x++)) ; do
-		for ((y = 0; y < T_SZ; y++)) ; do
+	x=0
+	while [ "$x" -lt "$T_SZ" ] ; do
+		y=0
+		while [ "$y" -lt "$T_SZ" ] ; do
 			eval 'tetroni_'${x}_$y'=$tetroni_'$1_${x}_$y
+			y=$((y+1))
 		done
+		x=$((x+1))
 	done
 }
 newTetroni() {
@@ -180,10 +188,12 @@ render() {
 	w=`tput cols`
 	h=`tput lines`
 	start=$(((w-W*${#BOT})/2))
-	lines=()
-	for ((y=0; y < H; y++)) ; do
+	unset lines
+	y=0
+	while [ "$y" -lt "$H" ] ; do
 		line='│'
-		for ((x=0; x < W; x++)) ; do
+		x=0
+		while [ "$x" -lt "$W" ] ; do
 			eval 'v=$GRID_'${x}_$y
 			dx=$((x-Tx))
 			dy=$((y-Ty))
@@ -205,10 +215,12 @@ render() {
 				v=
 			fi
 			line+=$v$p$CLEAR
+		x=$((x+1))
 		done
 		line+='│'
-		if ((y < T_SZ)) ; then
-			for ((x=0; x < T_SZ; x++)) ; do
+		if [ "$y" -lt "$T_SZ" ] ; then
+			x=0
+			while [ "$x" -lt "$T_SZ" ] ; do
 				eval 'v=$tetroni_'"${next}_${x}_$y"
 				if [[ "$v" == "" ]] ; then
 					p=$VOID
@@ -219,20 +231,24 @@ render() {
 					v=
 				fi
 				line+=$PREVIEW$v$p$CLEAR
+			x=$((x+1))
 			done
 		fi
 		lines+=("$line")
+	y=$((y+1))
 	done
 	line=$L_
-	for ((x = 0; x < W; x++)) ;do
+	x=0
+	while [ "$x" -lt "$W" ] ; do
 		line+=$BOT
+		x=$((x+1))
 	done
 	lines+=("$line$_J")
 }
 draw() {
 	local showed=0
 	for l in "${lines[@]}" ; do
-		if [[ "$showed" == 0 ]] ; then
+		if [ "$showed" == 0 ] ; then
 			printf %"$start"d "$score"00
 			showed=1
 		else
@@ -252,11 +268,13 @@ fall() {
 	fi
 }
 land() {
-	local dy dx
+	local dy dx x y
 	dx=$((x-Tx))
 	dy=$((y-Ty))
-	for ((dx=0; dx < T_SZ; dx++)) ; do
-		for ((dy=0; dy < T_SZ; dy++)) ; do
+	dx=0
+	while [ "$dx" -lt "$T_SZ" ] ; do
+		dy=0
+		while [ "$dy" -lt "$T_SZ" ] ; do
 			x=$((dx+Tx))
 			y=$((dy+Ty))
 			eval 'v=$tetroni_'${dx}_$dy
@@ -264,17 +282,22 @@ land() {
 				#GRID[x+y*W]=$v
 				eval "GRID_${x}_$y="'$v'
 			fi
+			dy=$((dy+1))
 		done
+		dx=$((dx+1))
 	done
 	newTetroni
 	checkMatch
 }
 checkMatch() {
 	local x y dy dx matches
+	matches=0
 	dy=$((H-1))
-	for ((y=H-1; y >= 0; y--)) ; do
+	y=$dy
+	while [ "$y" -ge 0 ] ; do
 		rowMatch=1
-		for ((x=0; x < W; x++)) ; do
+		x=0
+		while [ "$x" -lt "$W" ] ; do
 			if ((y != dy)) ; then
 				eval "GRID_${x}_$dy="'$GRID_'"${x}_$y"
 				eval "GRID_${x}_$y="
@@ -282,32 +305,37 @@ checkMatch() {
 			if eval '[[ "$GRID_'${x}_$dy'" == "" ]]' ; then
 				rowMatch=0
 			fi
+			x=$((x+1))
 		done
-		if ((rowMatch != 1)) ; then
-			let dy--
+		if [ "$rowMatch" -ne 1 ] ; then
+			dy=$((dy-1))
 		else
-			let matches++
+			matches=$((matches+1))
 		fi
+		y=$((y-1))
 	done
-	if (( matches != 0 )) ; then
-		(( score += 2**(matches-1) ))
+	if [ "$matches" -ne 0 ] ; then
+		score=$((score + 2**(matches-1) ))
 	fi
 }
 inBounds() {
 	local dy dx x y v
-	dx=$((x-Tx))
-	dy=$((y-Ty))
-	for ((dx=0; dx < T_SZ; dx++)) ; do
-		for ((dy=0; dy < T_SZ; dy++)) ; do
+	dx=0
+	while [ "$dx" -lt "$T_SZ" ] ; do
+		dy=0
+		while [ "$dy" -lt "$T_SZ" ] ; do
 			x=$((dx+Tx))
 			y=$((dy+Ty))
 			eval 'v=$tetroni_'${dx}_$dy
 			if [[ "$v" != '' ]] ; then
+				#if [ "$x" -le 0 ] || [ "$x" -ge "$W" ] || [ "$y" -le 0 ] || [ "$y" -ge "$H" ] || eval '[[ "$GRID_'${x}_$y'" != "" ]]' ; then
 				if ((x < 0 || x >= W || y < 0 || y >= H)) || eval '[[ "$GRID_'${x}_$y'" != "" ]]' ; then
 					return 1
 				fi
 			fi
+			dy=$((dy+1))
 		done
+		dx=$((dx+1))
 	done
 	return 0
 }
@@ -340,10 +368,12 @@ forceRotate() {
 	local half=$(((csz+1)/2))
 	local hsz=$((csz/2))
 	local x y i pval val ox oy
-	for ((x = 0; x < half; x++)) ; do
-		for ((y = 0; y < hsz; y++)) ; do
+	x=0
+	while [ "$x" -lt "$half" ] ; do
+		y=0
+		while [ "$y" -lt "$hsz" ] ; do
 			eval 'val=$tetroni_'${x}_$y
-			for ((i = 0; i < 4; i++)) ; do
+			for i in 0 1 2 3 ; do
 				if (($1 >= 1)) ; then
 					oy=$y
 					y=$x
@@ -357,7 +387,9 @@ forceRotate() {
 				eval 'tetroni_'${x}_$y'=$val'
 				val=$pval
 			done
+			y=$((y+1))
 		done
+		x=$((x+1))
 	done
 }
 togglePause() {
