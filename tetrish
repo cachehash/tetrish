@@ -69,16 +69,18 @@ T_SZ=4
 paused=0
 
 read_ch() {
-	local IFS
-	unset IFS
+	IFS_PREV=$IFS
+	IFS=' 
+	 '
 	if [ -t 0 ] ; then
 		local read_ch_old=`stty -g`
 		stty -icanon -echo
-		eval "$1"'=$(dd bs=1 count=1 2>/dev/null)'
+		eval "$1"'=`dd bs=1 count=1 2>/dev/null`'
 		stty $read_ch_old
 	else
-		eval "$1"'=$(dd bs=1 count=1 2>/dev/null)'
+		eval "$1"'=`dd bs=1 count=1 2>/dev/null`'
 	fi
+	IFS=$IFS_PREV
 }
 
 COLOR_PREFIX='[7m'
@@ -90,20 +92,6 @@ BLUE=$LIGHT$COLOR_PREFIX'[34m'
 MAGENTA=$LIGHT$COLOR_PREFIX'[35m'
 CYAN=$LIGHT$COLOR_PREFIX'[36m'
 
-tetroni() {
-	local x y z
-	z=2
-	x=0
-	while [ "$x" -lt "$T_SZ" ] ; do
-		y=0
-		while [ "$y" -lt "$T_SZ" ] ; do
-			eval 'tetroni_'$1_${x}_$y'=${'$z'}'
-			z=`expr $z + 1`
-			y=`expr $y + 1`
-		done
-		x=`expr $x + 1`
-	done
-}
 numTetronis=7
 numTetronisM1=6
 #tetronis=( I J L O S T Z )
@@ -139,41 +127,101 @@ getRandTetroni() {
 	;;
 	esac
 }
-tetroni I \
-	''	''	''	''	\
-	"$CYAN"	"$CYAN"	"$CYAN"	"$CYAN"	\
-	''	''	''	''	\
-	''	''	''	''
-tetroni J \
-	''	''	''	''	\
-	"$BLUE" ''	''	''	\
-	"$BLUE"	"$BLUE"	"$BLUE"	''	\
-	''	''	''	''
-tetroni L \
-	''		''		''		''	\
-	''		''		"$ORANGE"	''	\
-	"$ORANGE"	"$ORANGE"	"$ORANGE"	''	\
-	''		''		''		''
-tetroni O \
-	''	''		''		''	\
-	''	"$YELLOW"	"$YELLOW"	''	\
-	''	"$YELLOW"	"$YELLOW"	''	\
-	''	''		''		''
-tetroni S \
-	''		''		''		''	\
-	''		"$GREEN"	"$GREEN"	''	\
-	"$GREEN"	"$GREEN"	''		''	\
-	''		''		''		''
-tetroni T \
-	''		''		''		''	\
-	''		"$MAGENTA"	''		''	\
-	"$MAGENTA"	"$MAGENTA"	"$MAGENTA"	''	\
-	''		''		''		''
-tetroni Z \
-	''	''	''	''	\
-	"$RED"	"$RED"	''	''	\
-	''	"$RED"	"$RED"	''	\
-	''	''	''	''
+tetroni() {
+	local x y z
+	z=2
+	x=0
+	while [ "$x" -lt "$T_SZ" ] ; do
+		y=0
+		while [ "$y" -lt "$T_SZ" ] ; do
+			eval 'tetroni_'$1_${x}_$y'=${'$z'}'
+			z=`expr $z + 1`
+			y=`expr $y + 1`
+		done
+		x=`expr $x + 1`
+	done
+}
+getColor() {
+	case "$1" in
+	O)
+		echo "$ORANGE"
+	;;
+	R)
+		echo "$RED"
+	;;
+	G)
+		echo "$GREEN"
+	;;
+	Y)
+		echo "$YELLOW"
+	;;
+	B)
+		echo "$BLUE"
+	;;
+	M)
+		echo "$MAGENTA"
+	;;
+	C)
+		echo "$CYAN"
+	;;
+	esac
+}
+tetroni2() {
+	IFS_PREV=$IFS
+	IFS='
+	 '
+	z=0
+	for c in $2 ; do
+		x=`expr $z % $T_SZ`
+		y=`expr $z / $T_SZ`
+		c=`getColor $c`
+		eval 'tetroni_'$1_${x}_$y'=$c'
+		z=`expr $z + 1`
+	done
+	IFS=$IFS_PREV
+}
+tetroni2 I '
+	. C . .
+	. C . .
+	. C . .
+	. C . .
+	'
+tetroni2 J '
+	. B B .
+	. B . .
+	. B . .
+	. . . .
+	'
+tetroni2 L '
+	. O O .
+	. . O .
+	. . O .
+	. . . .
+	'
+tetroni2 O '
+	. . . .
+	. Y Y .
+	. Y Y .
+	. . . .
+	'
+tetroni2 S '
+	. . . .
+	. G G .
+	G G . .
+	. . . .
+	'
+tetroni2 T '
+	. . . .
+	. M . .
+	M M M .
+	. . . .
+	'
+tetroni2 Z '
+	. . . .
+	R R . .
+	. R R .
+	. . . .
+	'
 copyTetroni() {
 	local x y
 	x=0
