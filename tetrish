@@ -95,11 +95,11 @@ CYAN=$LIGHT$COLOR_PREFIX'[36m'
 numTetronis=7
 numTetronisM1=6
 
-#the bournshell doesn't suport local, $RANDOM, and $((x+y))
+#the Bourne shell doesn't suport local, $RANDOM, and $((x+y))
 #so if local isn't a command fall back to shuf for the randomness
 if type local > /dev/null ; then
 	getRandom() {
-		echo $(($RANDOM % $1))
+		echo $(($RANDOM % ($1+1) ))
 	}
 else
 	getRandom() {
