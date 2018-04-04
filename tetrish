@@ -73,7 +73,7 @@ read_ch() {
 	IFS=' 
 	 '
 	if [ -t 0 ] ; then
-		local read_ch_old=`stty -g`
+		read_ch_old=`stty -g`
 		stty -icanon -echo
 		eval "$1"'=`dd bs=1 count=1 2>/dev/null`'
 		stty $read_ch_old
@@ -127,20 +127,6 @@ getRandTetroni() {
 	;;
 	esac
 }
-tetroni() {
-	local x y z
-	z=2
-	x=0
-	while [ "$x" -lt "$T_SZ" ] ; do
-		y=0
-		while [ "$y" -lt "$T_SZ" ] ; do
-			eval 'tetroni_'$1_${x}_$y'=${'$z'}'
-			z=`expr $z + 1`
-			y=`expr $y + 1`
-		done
-		x=`expr $x + 1`
-	done
-}
 getColor() {
 	case "$1" in
 	O)
@@ -166,7 +152,7 @@ getColor() {
 	;;
 	esac
 }
-tetroni2() {
+tetroni() {
 	IFS_PREV=$IFS
 	IFS='
 	 '
@@ -180,58 +166,57 @@ tetroni2() {
 	done
 	IFS=$IFS_PREV
 }
-tetroni2 I '
+tetroni I '
 	. C . .
 	. C . .
 	. C . .
 	. C . .
 	'
-tetroni2 J '
+tetroni J '
 	. B B .
 	. B . .
 	. B . .
 	. . . .
 	'
-tetroni2 L '
+tetroni L '
 	. O O .
 	. . O .
 	. . O .
 	. . . .
 	'
-tetroni2 O '
+tetroni O '
 	. . . .
 	. Y Y .
 	. Y Y .
 	. . . .
 	'
-tetroni2 S '
+tetroni S '
 	. . . .
 	. G G .
 	G G . .
 	. . . .
 	'
-tetroni2 T '
+tetroni T '
 	. . . .
 	. M . .
 	M M M .
 	. . . .
 	'
-tetroni2 Z '
+tetroni Z '
 	. . . .
 	R R . .
 	. R R .
 	. . . .
 	'
 copyTetroni() {
-	local x y
-	x=0
-	while [ "$x" -lt "$T_SZ" ] ; do
-		y=0
-		while [ "$y" -lt "$T_SZ" ] ; do
-			eval 'tetroni_'${x}_$y'=$tetroni_'$1_${x}_$y
-			y=$(($y + 1))
+	cp_x=0
+	while [ "$cp_x" -lt "$T_SZ" ] ; do
+		cp_y=0
+		while [ "$cp_y" -lt "$T_SZ" ] ; do
+			eval 'tetroni_'${cp_x}_$cp_y'=$tetroni_'$1_${cp_x}_$cp_y
+			cp_y=$(($cp_y + 1))
 		done
-		x=$(($x + 1))
+		cp_x=$(($cp_x + 1))
 	done
 }
 newTetroni() {
@@ -248,68 +233,67 @@ newTetroni() {
 }
 
 render() {
-	local x y v line dx dy p bdy By
-	y=$Ty
+	rY=$Ty
 	bringDown
 	By=$Ty
-	Ty=$y
+	Ty=$rY
 
 	w=`tput cols`
 	h=`tput lines`
 	unset lines
-	y=0
-	while [ "$y" -lt "$H" ] ; do
+	rY=0
+	while [ "$rY" -lt "$H" ] ; do
 		line=$WALL
-		x=0
-		while [ "$x" -lt "$W" ] ; do
-			eval 'v=$GRID_'${x}_$y
-			dx=$(($x - $Tx))
-			dy=$(($y - $Ty))
-			bdy=$(($y - $By))
-			if [ 0 -le "$dx" ] && [ "$dx" -lt "$T_SZ" ] && [ 0 -le "$dy" ] && [ "$dy" -lt "$T_SZ" ] && eval '[ "$tetroni_'${dx}_$dy'" != "" ]' ; then
-				eval 'v=$FALLING$tetroni_'${dx}_$dy
-				p=$BIT
-			elif [ 0 -le "$dx" ] && [ "$dx" -lt "$T_SZ" ] && [ 0 -le "$bdy" ] && [ "$bdy" -lt "$T_SZ" ] && eval '[ "$tetroni_'${dx}_$bdy'" != "" ]' ; then
-				v=$GHOST
-				p=$BIT
+		rX=0
+		while [ "$rX" -lt "$W" ] ; do
+			eval 'rV=$GRID_'${rX}_$rY
+			rDx=$(($rX - $Tx))
+			rDy=$(($rY - $Ty))
+			bdy=$(($rY - $By))
+			if [ 0 -le "$rDx" ] && [ "$rDx" -lt "$T_SZ" ] && [ 0 -le "$rDy" ] && [ "$rDy" -lt "$T_SZ" ] && eval '[ "$tetroni_'${rDx}_$rDy'" != "" ]' ; then
+				eval 'rV=$FALLING$tetroni_'${rDx}_$rDy
+				rP=$BIT
+			elif [ 0 -le "$rDx" ] && [ "$rDx" -lt "$T_SZ" ] && [ 0 -le "$bdy" ] && [ "$bdy" -lt "$T_SZ" ] && eval '[ "$tetroni_'${rDx}_$bdy'" != "" ]' ; then
+				rV=$GHOST
+				rP=$BIT
 			else
-				if [ "$v" = "" ] ; then
-					p=$VOID
+				if [ "$rV" = "" ] ; then
+					rP=$VOID
 				else
-					p=$BIT
+					rP=$BIT
 				fi
 			fi
 			if [ "$paused" = 1 ] ; then
-				v=
+				rV=
 			fi
-			line=$line$v$p$CLEAR
-		x=$(($x + 1))
+			line=$line$rV$rP$CLEAR
+		rX=$(($rX + 1))
 		done
 		line=$line$WALL
-		if [ "$y" -lt "$T_SZ" ] ; then
-			x=0
-			while [ "$x" -lt "$T_SZ" ] ; do
-				eval 'v=$tetroni_'"${next}_${x}_$y"
-				if [ "$v" = "" ] ; then
-					p=$VOID
+		if [ "$rY" -lt "$T_SZ" ] ; then
+			rX=0
+			while [ "$rX" -lt "$T_SZ" ] ; do
+				eval 'rV=$tetroni_'"${next}_${rX}_$rY"
+				if [ "$rV" = "" ] ; then
+					rP=$VOID
 				else
-					p=$BIT
+					rP=$BIT
 				fi
 				if [ "$paused" = 1 ] ; then
-					v=
+					rV=
 				fi
-				line=$line$PREVIEW$v$p$CLEAR
-			x=$(($x + 1))
+				line=$line$PREVIEW$rV$rP$CLEAR
+			rX=$(($rX + 1))
 			done
 		fi
 		lines=$lines$line$ENDL
-	y=$(($y + 1))
+	rY=$(($rY + 1))
 	done
 	line=$L_
-	x=0
-	while [ "$x" -lt "$W" ] ; do
+	rX=0
+	while [ "$rX" -lt "$W" ] ; do
 		line=$line$BOT
-		x=$(($x + 1))
+		rX=$(($rX + 1))
 	done
 	lines=$lines$line$_J
 }
