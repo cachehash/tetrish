@@ -4,8 +4,20 @@ set -f
 IFS=
 if ! [ -z "$ZSH_VERSION" ] ; then
 	setopt sh_word_split
+	#for some reason zsh was using a static seed for the randomness
+	RANDOM=`shuf -i 0-10000 -n 1`
 fi
-
+ascii=1
+for a ; do
+	case "$a" in
+	-A)
+		ascii=1
+	;;
+	-a)
+		ascii=0
+	;;
+	esac
+done
 
 ENDL='
 '
@@ -30,19 +42,21 @@ DARK='[2m'
 CLEAR='[0m'
 
 VOID='  '
-BIT='🔳'
-BOT='──'
-_J='┘'
-L_='└'
-WALL='│'
-CW=2
-
-#BIT='[]'
-#BOT='--'
-#_J=/
-#L_=\\
-#WALL='|'
-#CW=2
+if [ "$ascii" -eq 0 ] ; then
+	BIT='🔳'
+	BOT='──'
+	_J='┘'
+	L_='└'
+	WALL='│'
+	CW=2
+else 
+	BIT='[]'
+	BOT='--'
+	_J=/
+	L_=\\
+	WALL='|'
+	CW=2
+fi
 
 FALLING=
 PREVIEW=$FALLING
@@ -94,8 +108,7 @@ numTetronis=7
 numTetronisM1=6
 #tetronis=( I J L O S T Z )
 getRandom() {
-	shuf -i 0-"$1" -n 1
-	#echo $((RANDOM%$1))
+	echo $((RANDOM%$1))
 }
 sleep() {
 	command sleep "$1"
