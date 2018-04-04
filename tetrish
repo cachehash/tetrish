@@ -2,13 +2,13 @@
 #disable all the posix features that make unquoted vars dangerous
 set -f
 IFS=
-if ! [ -z "$ZSH_VERSION" ] ; then
+if [ ! -z "$ZSH_VERSION" ] ; then
 	setopt sh_word_split
 	#for some reason zsh was using a static seed for the randomness
 	RANDOM=`shuf -i 0-10000 -n 1`
 fi
 ascii=1
-for a ; do
+for a in "$@"; do
 	case "$a" in
 	-A)
 		ascii=1
@@ -98,17 +98,17 @@ tetroni() {
 		y=0
 		while [ "$y" -lt "$T_SZ" ] ; do
 			eval 'tetroni_'$1_${x}_$y'=${'$z'}'
-			z=$((z+1))
-			y=$((y+1))
+			z=`expr $z + 1`
+			y=`expr $y + 1`
 		done
-		x=$((x+1))
+		x=`expr $x + 1`
 	done
 }
 numTetronis=7
 numTetronisM1=6
 #tetronis=( I J L O S T Z )
 getRandom() {
-	echo $((RANDOM%$1))
+	expr $RANDOM % $1
 }
 sleep() {
 	command sleep "$1"
@@ -191,7 +191,8 @@ newTetroni() {
 	next=`getRandTetroni`
 	Tx=$((W/2-2))
 	Ty=0
-	if ! inBounds ;then
+	if inBounds ; then :
+	else
 		display
 		echo 'game over'
 		exit
@@ -284,7 +285,8 @@ display() {
 	draw
 }
 fall() {
-	if ! slide 0 1 ; then
+	if slide 0 1 ; then :
+	else
 		land
 	fi
 }
@@ -369,7 +371,8 @@ slide() {
 	local dy=$2
 	Tx=$((Tx+dx))
 	Ty=$((Ty+dy))
-	if ! inBounds ; then
+	if inBounds ; then :
+	else
 		Tx=$((Tx-dx))
 		Ty=$((Ty-dy))
 		return 1
@@ -383,7 +386,8 @@ bringDown() {
 }
 rotate() {
 	forceRotate $1
-	if ! inBounds ; then
+	if inBounds ; then :
+	else
 		forceRotate $((0-$1))
 	fi
 }
