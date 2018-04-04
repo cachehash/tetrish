@@ -442,7 +442,7 @@ rotate() {
 forceRotate() {
 	local csz=$T_SZ
 	local s=$(($csz - 1))
-	local half=$((($csz + 1) / 2))
+	local half=$(( ( $csz + 1 ) / 2))
 	local hsz=$(($csz / 2))
 	local x y i pval val ox oy
 	x=0
