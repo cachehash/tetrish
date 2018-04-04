@@ -298,9 +298,10 @@ render() {
 	lines=$lines$line$_J
 }
 draw() {
-	local showed=0
-	local IFS=$ENDL
-	local start=$(( ( $w - $W * $CW ) / 2 ))
+	showed=0
+	IFS_PREV=$IFS
+	IFS=$ENDL
+	start=$(( ( $w - $W * $CW ) / 2 ))
 	for l in $lines ; do
 		if [ "$showed" = 0 ] ; then
 			printf %"$start"d "$score"00
@@ -310,6 +311,7 @@ draw() {
 		fi
 		printf '%s\n' "$l"
 	done
+	IFS=$IFS_PREV
 }
 display() {
 	render
@@ -323,90 +325,85 @@ fall() {
 	fi
 }
 land() {
-	local dy dx x y
-	dx=$(($x - $Tx))
-	dy=$(($y - $Ty))
-	dx=0
-	while [ "$dx" -lt "$T_SZ" ] ; do
-		dy=0
-		while [ "$dy" -lt "$T_SZ" ] ; do
-			x=$(($dx + $Tx))
-			y=$(($dy + $Ty))
-			eval 'v=$tetroni_'${dx}_$dy
+	lDx=$(($lX - $Tx))
+	lDy=$(($lY - $Ty))
+	lDx=0
+	while [ "$lDx" -lt "$T_SZ" ] ; do
+		lDy=0
+		while [ "$lDy" -lt "$T_SZ" ] ; do
+			lX=$(($lDx + $Tx))
+			lY=$(($lDy + $Ty))
+			eval 'v=$tetroni_'${lDx}_$lDy
 			if [ "$v" != '' ] ; then
-				#GRID[x+y*W]=$v
-				eval "GRID_${x}_$y="'$v'
+				#GRID[lX+lY*W]=$v
+				eval "GRID_${lX}_$lY="'$v'
 			fi
-			dy=$(($dy + 1))
+			lDy=$(($lDy + 1))
 		done
-		dx=$(($dx + 1))
+		lDx=$(($lDx + 1))
 	done
 	newTetroni
 	checkMatch
 }
 checkMatch() {
-	local x y dy dx matches s
 	matches=0
-	s=1
-	dy=$(($H - 1))
-	y=$dy
-	while [ "$y" -ge 0 ] ; do
+	cmS=1
+	cmDy=$(($H - 1))
+	cmY=$cmDy
+	while [ "$cmY" -ge 0 ] ; do
 		rowMatch=1
-		x=0
-		while [ "$x" -lt "$W" ] ; do
-			if [ "$y" != "$dy" ] ; then
-				eval "GRID_${x}_$dy="'$GRID_'"${x}_$y"
-				eval "GRID_${x}_$y="
+		cmX=0
+		while [ "$cmX" -lt "$W" ] ; do
+			if [ "$cmY" != "$cmDy" ] ; then
+				eval "GRID_${cmX}_$cmDy="'$GRID_'"${cmX}_$cmY"
+				eval "GRID_${cmX}_$cmY="
 			fi
-			if eval '[ "$GRID_'${x}_$dy'" = "" ]' ; then
+			if eval '[ "$GRID_'${cmX}_$cmDy'" = "" ]' ; then
 				rowMatch=0
 			fi
-			x=$(($x + 1))
+			cmX=$(($cmX + 1))
 		done
 		if [ "$rowMatch" -ne 1 ] ; then
-			dy=$(($dy - 1))
+			cmDy=$(($cmDy - 1))
 		else
 			matches=$(($matches + 1))
 		fi
-		y=$(($y - 1))
+		cmY=$(($cmY - 1))
 	done
 	if [ "$matches" -ne 0 ] ; then
 		while [ "$matches" -gt 1 ] ; do
-			s=$(($s * 2))
+			cmS=$(($cmS * 2))
 			matches=$(($matches - 1))
 		done
-		score=$(($score + $s))
+		score=$(($score + $cmS))
 	fi
 }
 inBounds() {
-	local dy dx x y v
-	dx=0
-	while [ "$dx" -lt "$T_SZ" ] ; do
-		dy=0
-		while [ "$dy" -lt "$T_SZ" ] ; do
-			x=$(($dx + $Tx))
-			y=$(($dy + $Ty))
-			eval 'v=$tetroni_'${dx}_$dy
-			if [ "$v" != '' ] ; then
-				if [ "$x" -lt 0 ] || [ "$x" -ge "$W" ] || [ "$y" -lt 0 ] || [ "$y" -ge "$H" ] || eval '[ "$GRID_'${x}_$y'" != "" ]' ; then
+	bDx=0
+	while [ "$bDx" -lt "$T_SZ" ] ; do
+		bDy=0
+		while [ "$bDy" -lt "$T_SZ" ] ; do
+			bX=$(($bDx + $Tx))
+			bY=$(($bDy + $Ty))
+			eval 'bV=$tetroni_'${bDx}_$bDy
+			if [ "$bV" != '' ] ; then
+				if [ "$bX" -lt 0 ] || [ "$bX" -ge "$W" ] || [ "$bY" -lt 0 ] || [ "$bY" -ge "$H" ] || eval '[ "$GRID_'${bX}_$bY'" != "" ]' ; then
 					return 1
 				fi
 			fi
-			dy=$(($dy + 1))
+			bDy=$(($bDy + 1))
 		done
-		dx=$(($dx + 1))
+		bDx=$(($bDx + 1))
 	done
 	return 0
 }
 slide() {
-	local dx=$1
-	local dy=$2
-	Tx=$(($Tx + $dx))
-	Ty=$(($Ty + $dy))
+	Tx=$(($Tx + $1))
+	Ty=$(($Ty + $2))
 	if inBounds ; then :
 	else
-		Tx=$(($Tx - $dx))
-		Ty=$(($Ty - $dy))
+		Tx=$(($Tx - $1))
+		Ty=$(($Ty - $2))
 		return 1
 	fi
 	return 0
@@ -424,11 +421,10 @@ rotate() {
 	fi
 }
 forceRotate() {
-	local csz=$T_SZ
-	local s=$(($csz - 1))
-	local half=$(( ( $csz + 1 ) / 2))
-	local hsz=$(($csz / 2))
-	local x y i pval val ox oy
+	csz=$T_SZ
+	s=$(($csz - 1))
+	half=$(( ( $csz + 1 ) / 2))
+	hsz=$(($csz / 2))
 	x=0
 	while [ "$x" -lt "$half" ] ; do
 		y=0
@@ -454,7 +450,7 @@ forceRotate() {
 	done
 }
 togglePause() {
-	local obit
+	obit
 	if [ "$paused" = 0 ] ; then
 		paused=1
 		obit=$BIT
