@@ -94,10 +94,18 @@ CYAN=$LIGHT$COLOR_PREFIX'[36m'
 
 numTetronis=7
 numTetronisM1=6
-#tetronis=( I J L O S T Z )
-getRandom() {
-	expr $RANDOM % $1
-}
+
+#the bournshell doesn't suport local, $RANDOM, and $((x+y))
+#so if local isn't a command fall back to shuf for the randomness
+if type local > /dev/null ; then
+	getRandom() {
+		echo $(($RANDOM % $1))
+	}
+else
+	getRandom() {
+		shuf -i 0-$1 -n 1
+	}
+fi
 sleep() {
 	command sleep "$1"
 }
