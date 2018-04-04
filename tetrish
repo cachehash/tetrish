@@ -107,7 +107,7 @@ else
 	}
 fi
 sleep() {
-	command sleep "$1"
+	/bin/sleep "$1"
 }
 getRandTetroni() {
 	r=`getRandom $numTetronisM1`
@@ -333,8 +333,6 @@ fall() {
 	fi
 }
 land() {
-	lDx=$(($lX - $Tx))
-	lDy=$(($lY - $Ty))
 	lDx=0
 	while [ "$lDx" -lt "$T_SZ" ] ; do
 		lDy=0
@@ -541,6 +539,7 @@ IFS=
 		;;
 		G)
 			bringDown
+			land
 		;;
 		r)
 			rotate -1
