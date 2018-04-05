@@ -68,20 +68,26 @@ H=24
 T_SZ=4
 paused=0
 
-read_ch() {
-	IFS_PREV=$IFS
-	IFS=' 
-	 '
-	if [ -t 0 ] ; then
-		read_ch_old=`stty -g`
-		stty -icanon -echo
-		eval "$1"'=`dd bs=1 count=1 2>/dev/null`'
-		stty $read_ch_old
-	else
-		eval "$1"'=`dd bs=1 count=1 2>/dev/null`'
-	fi
-	IFS=$IFS_PREV
-}
+if [ ! -z "$BASH_VERSION" ] ; then
+	read_ch() {
+		read -rsN1 "$1"
+	}
+else
+	read_ch() {
+		IFS_PREV=$IFS
+		IFS=' 
+		 '
+		if [ -t 0 ] ; then
+			read_ch_old=`stty -g`
+			stty -icanon -echo
+			eval "$1"'=`dd bs=1 count=1 2>/dev/null`'
+			stty $read_ch_old
+		else
+			eval "$1"'=`dd bs=1 count=1 2>/dev/null`'
+		fi
+		IFS=$IFS_PREV
+	}
+fi
 
 COLOR_PREFIX='[7m'
 ORANGE=$COLOR_PREFIX'[33m'
