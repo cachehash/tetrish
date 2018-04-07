@@ -179,66 +179,17 @@ tetroni() {
 		x=`expr $z % $T_SZ`
 		y=`expr $z / $T_SZ`
 		c=`getColor $c`
-		eval 'tetroni_'$1_${x}_$y'=$c'
+		eval 'tetroni_'$1_0_${x}_$y'=$c'
 		z=`expr $z + 1`
 	done
+	rotateInto 1 $1_0 $1_1
+	rotateInto 1 $1_1 $1_2
+	rotateInto 1 $1_2 $1_3
 	IFS=$IFS_PREV
 }
-tetroni I '
-	. C . .
-	. C . .
-	. C . .
-	. C . .
-	'
-tetroni J '
-	. B B .
-	. B . .
-	. B . .
-	. . . .
-	'
-tetroni L '
-	. O O .
-	. . O .
-	. . O .
-	. . . .
-	'
-tetroni O '
-	. . . .
-	. Y Y .
-	. Y Y .
-	. . . .
-	'
-tetroni S '
-	. . . .
-	. G G .
-	G G . .
-	. . . .
-	'
-tetroni T '
-	. . . .
-	. M . .
-	M M M .
-	. . . .
-	'
-tetroni Z '
-	. . . .
-	R R . .
-	. R R .
-	. . . .
-	'
-copyTetroni() {
-	cp_x=0
-	while [ "$cp_x" -lt "$T_SZ" ] ; do
-		cp_y=0
-		while [ "$cp_y" -lt "$T_SZ" ] ; do
-			eval 'tetroni_'${cp_x}_$cp_y'=$tetroni_'$1_${cp_x}_$cp_y
-			cp_y=$(($cp_y + 1))	##no_expr##
-		done
-		cp_x=$(($cp_x + 1))	##no_expr##
-	done
-}
 newTetroni() {
-	copyTetroni "$next"
+	tet="$next"
+	ang=0
 	next=`getRandTetroni`
 	Tx=$(($W / 2 - 2))
 	Ty=0
@@ -268,10 +219,10 @@ render() {
 			rDx=$(($rX - $Tx))
 			rDy=$(($rY - $Ty))
 			bdy=$(($rY - $By))
-			if [ 0 -le "$rDx" ] && [ "$rDx" -lt "$T_SZ" ] && [ 0 -le "$rDy" ] && [ "$rDy" -lt "$T_SZ" ] && eval '[ "$tetroni_'${rDx}_$rDy'" != "" ]' ; then
-				eval 'rV=$FALLING$tetroni_'${rDx}_$rDy
+			if [ 0 -le "$rDx" ] && [ "$rDx" -lt "$T_SZ" ] && [ 0 -le "$rDy" ] && [ "$rDy" -lt "$T_SZ" ] && eval '[ "$tetroni_'${tet}_${ang}_${rDx}_$rDy'" != "" ]' ; then
+				eval 'rV=$FALLING$tetroni_'${tet}_${ang}_${rDx}_$rDy
 				rP=$BIT
-			elif [ 0 -le "$rDx" ] && [ "$rDx" -lt "$T_SZ" ] && [ 0 -le "$bdy" ] && [ "$bdy" -lt "$T_SZ" ] && eval '[ "$tetroni_'${rDx}_$bdy'" != "" ]' ; then
+			elif [ 0 -le "$rDx" ] && [ "$rDx" -lt "$T_SZ" ] && [ 0 -le "$bdy" ] && [ "$bdy" -lt "$T_SZ" ] && eval '[ "$tetroni_'${tet}_${ang}_${rDx}_$bdy'" != "" ]' ; then
 				rV=$GHOST
 				rP=$BIT
 			else
@@ -291,7 +242,7 @@ render() {
 		if [ "$rY" -lt "$T_SZ" ] ; then
 			rX=0
 			while [ "$rX" -lt "$T_SZ" ] ; do
-				eval 'rV=$tetroni_'"${next}_${rX}_$rY"
+				eval 'rV=$tetroni_'"${next}_0_${rX}_$rY"
 				if [ "$rV" = "" ] ; then
 					rP=$VOID
 				else
@@ -349,7 +300,7 @@ land() {
 		while [ "$lDy" -lt "$T_SZ" ] ; do
 			lX=$(($lDx + $Tx))
 			lY=$(($lDy + $Ty))
-			eval 'v=$tetroni_'${lDx}_$lDy
+			eval 'v=$tetroni_'${tet}_${ang}_${lDx}_$lDy
 			if [ "$v" != '' ] ; then
 				#GRID[lX+lY*W]=$v
 				eval "GRID_${lX}_$lY="'$v'
@@ -401,7 +352,7 @@ inBounds() {
 		while [ "$bDy" -lt "$T_SZ" ] ; do
 			bX=$(($bDx + $Tx))
 			bY=$(($bDy + $Ty))
-			eval 'bV=$tetroni_'${bDx}_$bDy
+			eval 'bV=$tetroni_'${tet}_${ang}_${bDx}_$bDy
 			if [ "$bV" != '' ] ; then
 				if [ "$bX" -lt 0 ] || [ "$bX" -ge "$W" ] || [ "$bY" -lt 0 ] || [ "$bY" -ge "$H" ] || eval '[ "$GRID_'${bX}_$bY'" != "" ]' ; then
 					return 1
@@ -430,10 +381,12 @@ bringDown() {
 	done
 }
 rotate() {
-	forceRotate $1
+	oang=$ang
+	ang=$(( ( $ang + $1 ) % 4 ))
+	rotateInto $1 ''
 	if inBounds ; then :
 	else
-		thrash || forceRotate $((0 - $1))
+		thrash || ang=$oang
 	fi
 }
 thrash() {
@@ -452,7 +405,7 @@ thrash() {
 	Ty=$oldTy
 	return 1
 }
-forceRotate() {
+rotateInto() {
 	csz=$T_SZ
 	s=$(($csz - 1))
 	half=$(( ( $csz + 1 ) / 2))
@@ -461,7 +414,7 @@ forceRotate() {
 	while [ "$x" -lt "$half" ] ; do
 		y=0
 		while [ "$y" -lt "$hsz" ] ; do
-			eval 'val=$tetroni_'${x}_$y
+			eval 'val=$tetroni_'$2_${x}_$y
 			for i in 0 1 2 3 ; do
 				if [ "$1" -ge 1 ] ; then
 					oy=$y
@@ -472,8 +425,8 @@ forceRotate() {
 					x=$y
 					y=$(($s - $ox))
 				fi
-				eval 'pval=$tetroni_'${x}_$y
-				eval 'tetroni_'${x}_$y'=$val'
+				eval 'pval=$tetroni_'$2_${x}_$y
+				eval 'tetroni_'$3_${x}_$y'=$val'
 				val=$pval
 			done
 			y=$(($y + 1))	##no_expr##
@@ -493,6 +446,50 @@ togglePause() {
 		display
 	fi
 }
+tetroni I '
+	. C . .
+	. C . .
+	. C . .
+	. C . .
+	'
+tetroni J '
+	. B B .
+	. B . .
+	. B . .
+	. . . .
+	'
+tetroni L '
+	. O O .
+	. . O .
+	. . O .
+	. . . .
+	'
+tetroni O '
+	. . . .
+	. Y Y .
+	. Y Y .
+	. . . .
+	'
+tetroni S '
+	. . . .
+	. G G .
+	G G . .
+	. . . .
+	'
+tetroni T '
+	. . . .
+	. M . .
+	M M M .
+	. . . .
+	'
+tetroni Z '
+	. . . .
+	R R . .
+	. R R .
+	. . . .
+	'
+ang=0
+tet=`getRandTetroni`
 next=`getRandTetroni`
 newTetroni
 render
