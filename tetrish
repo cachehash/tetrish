@@ -512,10 +512,10 @@ IFS=
 		j|"$DOWN")
 			printf j
 		;;
-		k|"$UP"|"$C_RIGHT")
+		k|x|"$UP"|"$C_RIGHT")
 			printf k
 		;;
-		r|"$C_UP"|"$C_LEFT")
+		r|z|"$C_UP"|"$C_LEFT")
 			printf r
 		;;
 		l|$RIGHT)
