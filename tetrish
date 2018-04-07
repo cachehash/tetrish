@@ -111,7 +111,7 @@ if [ 8$RANDOM -ne 8 ] ; then
 	}
 else
 	getRandom() {
-		shuf -i 0-$numTetronisM1 -n 1
+		dd if=/dev/urandom count=1 2> /dev/null | cksum | awk '{print $1%'"$numTetronis"'}'
 	}
 fi
 sleep() {
@@ -203,7 +203,7 @@ newTetroni() {
 
 render() {
 	rY=$Ty
-	bringDown
+	bringDown	##no_expr##
 	By=$Ty
 	Ty=$rY
 
