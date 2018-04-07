@@ -116,8 +116,7 @@ sleep() {
 	/bin/sleep "$1"
 }
 getRandTetroni() {
-	r=`getRandom $numTetronisM1`
-	case $r in
+	case `getRandom` in
 	0)
 		echo I
 	;;
@@ -429,8 +428,24 @@ rotate() {
 	forceRotate $1
 	if inBounds ; then :
 	else
-		forceRotate $((0 - $1))
+		thrash || forceRotate $((0 - $1))
 	fi
+}
+thrash() {
+	oldTx=$Tx
+	oldTy=$Ty
+
+	for thrashDx in -1 0 1 ; do
+		for thrashDy in 0 1 ; do
+			Tx=$(($oldTx + $thrashDx))
+			Ty=$(($oldTy + $thrashDy))
+			inBounds && return 0
+		done
+	done
+
+	Tx=$oldTx
+	Ty=$oldTy
+	return 1
 }
 forceRotate() {
 	csz=$T_SZ
@@ -462,7 +477,6 @@ forceRotate() {
 	done
 }
 togglePause() {
-	obit
 	if [ "$paused" = 0 ] ; then
 		paused=1
 		obit=$BIT
