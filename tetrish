@@ -211,21 +211,36 @@ render() {
 	h=`tput lines`
 	unset lines
 	rY=0
+	Tx_plus_T_SZ=$(($Tx + $T_SZ))
+	Ty_plus_T_SZ=$(($Ty + $T_SZ))
+	By_plus_T_SZ=$(($By + $T_SZ))
 	while [ "$rY" -lt "$H" ] ; do
 		line=$WALL
+		rDy=$(($rY - $Ty))
+		rBy=$(($rY - $By))
 		rX=0
 		while [ "$rX" -lt "$W" ] ; do
 			eval 'rV=$GRID_'${rX}_$rY
-			rDx=$(($rX - $Tx))
-			rDy=$(($rY - $Ty))
-			bdy=$(($rY - $By))
-			if [ 0 -le "$rDx" ] && [ "$rDx" -lt "$T_SZ" ] && [ 0 -le "$rDy" ] && [ "$rDy" -lt "$T_SZ" ] && eval '[ "$tetroni_'${tet}_${ang}_${rDx}_$rDy'" != "" ]' ; then
-				eval 'rV=$FALLING$tetroni_'${tet}_${ang}_${rDx}_$rDy
-				rP=$BIT
-			elif [ 0 -le "$rDx" ] && [ "$rDx" -lt "$T_SZ" ] && [ 0 -le "$bdy" ] && [ "$bdy" -lt "$T_SZ" ] && eval '[ "$tetroni_'${tet}_${ang}_${rDx}_$bdy'" != "" ]' ; then
-				rV=$GHOST
-				rP=$BIT
-			else
+			void=1
+			if [ "$Tx" -le "$rX" ] && [ "$rX" -lt "$Tx_plus_T_SZ" ] ; then
+				if [ "$Ty" -le "$rY" ] && [ "$rY" -lt "$Ty_plus_T_SZ" ] ; then 
+					rDx=$(($rX - $Tx))
+					if eval '[ "$tetroni_'${tet}_${ang}_${rDx}_$rDy'" != "" ]' ; then
+						eval 'rV=$FALLING$tetroni_'${tet}_${ang}_${rDx}_$rDy
+						rP=$BIT
+						void=0
+					fi
+				fi
+				if [ $void -eq 1 ] && [ "$By" -le "$rY" ] && [ "$rY" -lt "$By_plus_T_SZ" ] ; then
+					rDx=$(($rX - $Tx))
+					if eval '[ "$tetroni_'${tet}_${ang}_${rDx}_$rBy'" != "" ]' ; then
+						rV=$GHOST
+						rP=$BIT
+						void=0
+					fi
+				fi
+			fi
+			if [ "$void" -eq 1 ] ; then
 				if [ "$rV" = "" ] ; then
 					rP=$VOID
 				else
