@@ -384,12 +384,12 @@ checkMatch() {
 		else
 			matches=$(($matches + 1))
 		fi
-		cmY=$(($cmY - 1))	##no_expr##
+		cmY=$(($cmY - 1))
 	done
 	if [ "$matches" -ne 0 ] ; then
 		while [ "$matches" -gt 1 ] ; do
 			cmS=$(($cmS * 2))
-			matches=$(($matches - 1))	##no_expr##
+			matches=$(($matches - 1))
 		done
 		score=$(($score + $cmS))
 	fi
