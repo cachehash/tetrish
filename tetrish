@@ -2,6 +2,8 @@
 #disable all the posix features that make unquoted vars dangerous
 set -f
 IFS=
+IFS_FULL='
+	 '
 if [ ! -z "$ZSH_VERSION" ] ; then
 	setopt sh_word_split
 	#for some reason zsh was using a static seed for the randomness
@@ -115,6 +117,9 @@ fi
 sleep() {
 	/bin/sleep "$1"
 }
+upTo() {
+	echo "$1" "$2" | awk '{for (i=$1; i<$2; i++) print i}'
+}
 getRandTetroni() {
 	case `getRandom` in
 	0)
@@ -227,9 +232,9 @@ copyTetroni() {
 		cp_y=0
 		while [ "$cp_y" -lt "$T_SZ" ] ; do
 			eval 'tetroni_'${cp_x}_$cp_y'=$tetroni_'$1_${cp_x}_$cp_y
-			cp_y=$(($cp_y + 1))
+			cp_y=$(($cp_y + 1))	##no_expr##
 		done
-		cp_x=$(($cp_x + 1))
+		cp_x=$(($cp_x + 1))	##no_expr##
 	done
 }
 newTetroni() {
@@ -280,7 +285,7 @@ render() {
 				rV=
 			fi
 			line=$line$rV$rP$CLEAR
-		rX=$(($rX + 1))
+		rX=$(($rX + 1))  ##no_expr##
 		done
 		line=$line$WALL
 		if [ "$rY" -lt "$T_SZ" ] ; then
@@ -296,17 +301,17 @@ render() {
 					rV=
 				fi
 				line=$line$PREVIEW$rV$rP$CLEAR
-			rX=$(($rX + 1))
+			rX=$(($rX + 1))	##no_expr##
 			done
 		fi
 		lines=$lines$line$ENDL
-	rY=$(($rY + 1))
+	rY=$(($rY + 1))	##no_expr##
 	done
 	line=$L_
 	rX=0
 	while [ "$rX" -lt "$W" ] ; do
 		line=$line$BOT
-		rX=$(($rX + 1))
+		rX=$(($rX + 1))	##no_expr##
 	done
 	lines=$lines$line$_J
 }
@@ -349,9 +354,9 @@ land() {
 				#GRID[lX+lY*W]=$v
 				eval "GRID_${lX}_$lY="'$v'
 			fi
-			lDy=$(($lDy + 1))
+			lDy=$(($lDy + 1))	##no_expr##
 		done
-		lDx=$(($lDx + 1))
+		lDx=$(($lDx + 1))	##no_expr##
 	done
 	newTetroni
 	checkMatch
@@ -372,19 +377,19 @@ checkMatch() {
 			if eval '[ "$GRID_'${cmX}_$cmDy'" = "" ]' ; then
 				rowMatch=0
 			fi
-			cmX=$(($cmX + 1))
+			cmX=$(($cmX + 1))	##no_expr##
 		done
 		if [ "$rowMatch" -ne 1 ] ; then
 			cmDy=$(($cmDy - 1))
 		else
 			matches=$(($matches + 1))
 		fi
-		cmY=$(($cmY - 1))
+		cmY=$(($cmY - 1))	##no_expr##
 	done
 	if [ "$matches" -ne 0 ] ; then
 		while [ "$matches" -gt 1 ] ; do
 			cmS=$(($cmS * 2))
-			matches=$(($matches - 1))
+			matches=$(($matches - 1))	##no_expr##
 		done
 		score=$(($score + $cmS))
 	fi
@@ -402,9 +407,9 @@ inBounds() {
 					return 1
 				fi
 			fi
-			bDy=$(($bDy + 1))
+			bDy=$(($bDy + 1))	##no_expr##
 		done
-		bDx=$(($bDx + 1))
+		bDx=$(($bDx + 1))	##no_expr##
 	done
 	return 0
 }
@@ -471,9 +476,9 @@ forceRotate() {
 				eval 'tetroni_'${x}_$y'=$val'
 				val=$pval
 			done
-			y=$(($y + 1))
+			y=$(($y + 1))	##no_expr##
 		done
-		x=$(($x + 1))
+		x=$(($x + 1))	##no_expr##
 	done
 }
 togglePause() {

@@ -2,8 +2,8 @@
 
 all: tetrish.jsh
 
-tetrish.jsh: tetrish
-	sed -e '/$$((.*))/s/[()]/\\&/g' -e 's/$$\\(\\(\(.*\)\\)\\)/`expr \1`/g' < $< > $@
+tetrish.jsh: tetrish convert.sed
+	./convert.sed < $< > $@
 	chmod 755 tetrish.jsh
 
 clean:
