@@ -418,7 +418,7 @@ bringDown() {
 }
 rotate() {
 	oang=$ang
-	ang=$(( ( $ang + $1 ) % 4 ))
+	ang=$(( ( $ang + 4 + $1 ) % 4 ))
 	rotateInto $1 ''
 	if inBounds ; then :
 	else
