@@ -114,8 +114,19 @@ else
 		dd if=/dev/urandom count=1 2> /dev/null | cksum | awk '{print $1%'"$numTetronis"'}'
 	}
 fi
-sleep() {
-	/bin/sleep "$1"
+delay=5
+minDelay=2
+pause() {
+	/bin/sleep .$delay
+}
+decDelay() {
+	delay=$(($delay - 1))
+}
+speedUp() {
+	if [ $delay -gt $minDelay ] ; then
+		decDelay
+		kill -12 "$pid"
+	fi
 }
 upTo() {
 	echo "$1" "$2" | awk '{for (i=$1; i<$2; i++) print i}'
@@ -511,10 +522,21 @@ render
 draw
 IFS=
 (
-	while sleep .5 ; do
-		printf j
-		#printf $'\a' >&2
-	done &
+	(
+		trap 'READY=1' 10 #sigusr1
+		trap 'decDelay' 12 #sigusr2
+		READY=0
+		while pause ; do
+			if [ "$READY" = 1 ] ; then
+				printf j
+				READY=0
+			fi
+			#printf $'\a' >&2
+		done 
+	) &
+	#pid is read first and other input is ignored
+	#start parsing other input on '.'
+	echo $! .
 	while read_ch p; do 
 		if [ "$p" = '' ] ; then
 			read_ch ap
@@ -546,53 +568,54 @@ IFS=
 		;;
 		esac
 	done 
-) | while read_ch p; do
-	#assume that if the delay was less than 100 ms we
-	#read input from buffer and therefore need to 
-	#frameskip
-	skip=0
-	#if ((`date +%s%3N` - date < MIN_BUFF_WAIT)) ; then
-	#	skip=1
-	#else
-	#	skip=0
-	#fi
-	if [ "$paused" = 1 ] ; then
-		if [ "$p" = p ] ; then
-			togglePause
-		fi
-	else
+) | (
+	while read_ch p; do
 		case "$p" in
-		h)
-			slide -1 0
+		[0-9])
+			pid=$pid$p
 		;;
-		j)
-			fall
-		;;
-		k)
-			rotate 1
-		;;
-		l)
-			slide 1 0
-		;;
-		G)
-			bringDown
-			land
-		;;
-		r)
-			rotate -1
-		;;
-		p)
-			togglePause
+		.)
+			break
 		;;
 		esac
-	fi
-	if [ "$skip" = 1 ] && [ "$fs" -lt "$MAX_FRAMESKIP" ] ; then
-		fs=$(($fs + 1))
-	else
+	done
+	trap 'kill $pid' EXIT
+	while read_ch p; do
+		if [ "$paused" = 1 ] ; then
+			if [ "$p" = p ] ; then
+				togglePause
+			fi
+		else
+			case "$p" in
+			h)
+				slide -1 0
+			;;
+			j)
+				fall
+			;;
+			k)
+				rotate 1
+			;;
+			l)
+				slide 1 0
+			;;
+			G)
+				bringDown
+				land
+				#speedUp
+			;;
+			r)
+				rotate -1
+			;;
+			p)
+				togglePause
+			;;
+			esac
+		fi
 		if [ "$paused" = 0 ] ; then
 			display
+			#signal other process we're ready for input
+			kill -10 "$pid"
 		fi
-		fs=0
-	fi
-	date=`date +%s%3N`
-done
+	done
+)
