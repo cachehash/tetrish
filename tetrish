@@ -218,23 +218,34 @@ render() {
 	By_plus_T_SZ=$(($By + $T_SZ))
 	for rY in $upToH; do
 		line=$WALL
-		rDy=$(($rY - $Ty))
-		rBy=$(($rY - $By))
+		#flag these as invalid only calculate 
+		#them if we need them later down below
+		rDy=-1
+		rBy=-1
 		rX=0
 		for rX in $upToW; do
 			eval 'rV=$GRID_'${rX}_$rY
 			void=1
+			#if the rX is inside the box of the tetroni
 			if [ "$Tx" -le "$rX" ] && [ "$rX" -lt "$Tx_plus_T_SZ" ] ; then
+				#if the rY is inside the box of the tetroni
 				if [ "$Ty" -le "$rY" ] && [ "$rY" -lt "$Ty_plus_T_SZ" ] ; then 
 					rDx=$(($rX - $Tx))
+					if [ $rDy -eq -1 ] ; then
+						rDy=$(($rY - $Ty))
+					fi
 					if eval '[ "$tetroni_'${tet}_${ang}_${rDx}_$rDy'" != "" ]' ; then
 						eval 'rV=$FALLING$tetroni_'${tet}_${ang}_${rDx}_$rDy
 						rP=$BIT
 						void=0
 					fi
 				fi
+				#if the rY is inside the box of where the tetroni is going to land
 				if [ $void -eq 1 ] && [ "$By" -le "$rY" ] && [ "$rY" -lt "$By_plus_T_SZ" ] ; then
 					rDx=$(($rX - $Tx))
+					if [ $rBy -eq -1 ] ; then
+						rBy=$(($rY - $By))
+					fi
 					if eval '[ "$tetroni_'${tet}_${ang}_${rDx}_$rBy'" != "" ]' ; then
 						rV=$GHOST
 						rP=$BIT
