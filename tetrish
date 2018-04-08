@@ -1,9 +1,6 @@
 #!/bin/bash
 #disable all the posix features that make unquoted vars dangerous
 set -f
-IFS=
-IFS_FULL='
-	 '
 if [ ! -z "$ZSH_VERSION" ] ; then
 	setopt sh_word_split
 	#for some reason zsh was using a static seed for the randomness
@@ -77,9 +74,6 @@ if [ ! -z "$BASH_VERSION" ] ; then
 	}
 else
 	read_ch() {
-		IFS_PREV=$IFS
-		IFS=' 
-		 '
 		if [ -t 0 ] ; then
 			read_ch_old=`stty -g`
 			stty -icanon -echo
@@ -88,7 +82,6 @@ else
 		else
 			eval "$1"'=`dd bs=1 count=1 2>/dev/null`'
 		fi
-		IFS=$IFS_PREV
 	}
 fi
 
@@ -131,6 +124,8 @@ speedUp() {
 upTo() {
 	echo "$1" "$2" | awk '{for (i=$1; i<$2; i++) print i}'
 }
+upToW=`upTo 0 $W`
+upToH=`upTo 0 $H`
 getRandTetroni() {
 	case `getRandom` in
 	0)
@@ -182,9 +177,6 @@ getColor() {
 	esac
 }
 tetroni() {
-	IFS_PREV=$IFS
-	IFS='
-	 '
 	z=0
 	for c in $2 ; do
 		x=`expr $z % $T_SZ`
@@ -196,7 +188,6 @@ tetroni() {
 	rotateInto 1 $1_0 $1_1
 	rotateInto 1 $1_1 $1_2
 	rotateInto 1 $1_2 $1_3
-	IFS=$IFS_PREV
 }
 newTetroni() {
 	tet="$next"
@@ -225,12 +216,12 @@ render() {
 	Tx_plus_T_SZ=$(($Tx + $T_SZ))
 	Ty_plus_T_SZ=$(($Ty + $T_SZ))
 	By_plus_T_SZ=$(($By + $T_SZ))
-	while [ "$rY" -lt "$H" ] ; do
+	for rY in $upToH; do
 		line=$WALL
 		rDy=$(($rY - $Ty))
 		rBy=$(($rY - $By))
 		rX=0
-		while [ "$rX" -lt "$W" ] ; do
+		for rX in $upToW; do
 			eval 'rV=$GRID_'${rX}_$rY
 			void=1
 			if [ "$Tx" -le "$rX" ] && [ "$rX" -lt "$Tx_plus_T_SZ" ] ; then
@@ -262,7 +253,6 @@ render() {
 				rV=
 			fi
 			line=$line$rV$rP$CLEAR
-		rX=$(($rX + 1))  ##no_expr##
 		done
 		line=$line$WALL
 		if [ "$rY" -lt "$T_SZ" ] ; then
@@ -282,7 +272,6 @@ render() {
 			done
 		fi
 		lines=$lines$line$ENDL
-	rY=$(($rY + 1))	##no_expr##
 	done
 	line=$L_
 	rX=0
@@ -520,7 +509,6 @@ next=`getRandTetroni`
 newTetroni
 render
 draw
-IFS=
 (
 	(
 		trap 'READY=1' 10 #sigusr1
