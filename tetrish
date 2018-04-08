@@ -7,17 +7,36 @@ if [ ! -z "$ZSH_VERSION" ] ; then
 	unset RANDOM
 	#RANDOM=`shuf -i 0-10000 -n 1`
 fi
-ascii=1
-for a in "$@"; do
-	case "$a" in
+ascii=-1
+while [ $# -gt 0 ] ; do
+	case "$1" in
 	-A)
 		ascii=1
 	;;
 	-a)
+		ascii=-1
+	;;
+	-U)
 		ascii=0
 	;;
+	-p)
+		BIT=$2
+	;;
+	-c)
+		CW=$2
+	;;
 	esac
+	shift
 done
+if [ $ascii -eq -1 ] ; then
+	ascii=0
+	if [ 8"$BIT" = 8 ] ; then
+		BIT='[]'
+	fi
+fi
+if [ 8"$CW" = 8 ] ; then
+	CW=`printf %s "$BIT" | wc -c`
+fi
 
 ENDL='
 '
@@ -40,23 +59,37 @@ C_RIGHT='OC'
 LIGHT='[1m'
 DARK='[2m'
 CLEAR='[0m'
+upTo() {
+	echo "$1" "$2" | awk '{for (i=$1; i<$2; i++) print i}'
+}
 
-VOID='  '
+VOID=' '
 if [ "$ascii" -eq 0 ] ; then
-	BIT='🔳'
-	BOT='──'
+	if [ 8"$BIT" = 8 ] ; then
+		BIT='🔳'
+		CW=2
+	fi
+	BOT='─'
 	_J='┘'
 	L_='└'
 	WALL='│'
-	CW=2
 else 
-	BIT='[]'
-	BOT='--'
+	if [ 8"$BIT" = 8 ] ; then
+		BIT='[]'
+		CW=2
+	fi
+	BOT='-'
 	_J=/
 	L_=\\
 	WALL='|'
-	CW=2
 fi
+for i in `upTo 0 $CW` ; do
+	VOID2=$VOID2$VOID
+	BOT2=$BOT2$BOT
+done
+VOID=$VOID2
+BOT=$BOT2
+
 
 FALLING=
 PREVIEW=$FALLING
@@ -65,6 +98,8 @@ GHOST=$LIGHT
 
 W=10
 H=24
+upToW=`upTo 0 $W`
+upToH=`upTo 0 $H`
 T_SZ=4
 paused=0
 
@@ -121,11 +156,6 @@ speedUp() {
 		kill -12 "$pid"
 	fi
 }
-upTo() {
-	echo "$1" "$2" | awk '{for (i=$1; i<$2; i++) print i}'
-}
-upToW=`upTo 0 $W`
-upToH=`upTo 0 $H`
 getRandTetroni() {
 	case `getRandom` in
 	0)
@@ -563,7 +593,7 @@ draw
 		k|x|"$UP"|"$C_RIGHT")
 			printf k
 		;;
-		r|z|"$C_UP"|"$C_LEFT")
+		i|z|"$C_UP"|"$C_LEFT")
 			printf r
 		;;
 		l|$RIGHT)
