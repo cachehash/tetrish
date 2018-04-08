@@ -299,8 +299,11 @@ draw() {
 	start=$(( ( $w - $W * $CW ) / 2 ))
 	for l in $lines ; do
 		if [ "$showed" = 0 ] ; then
-			printf %"$start"d "$score"00
+			printf %"$start"s "Score: `printf %d "$score"00`"
 			showed=1
+		elif [ "$showed" = 1 ] ; then
+			printf %"$start"s "Lines: $allMatches"
+			showed=2
 		else
 			printf %"$start"s ''
 		fi
@@ -338,6 +341,7 @@ land() {
 	newTetroni
 	checkMatch
 }
+allMatches=0
 checkMatch() {
 	matches=0
 	cmS=1
@@ -363,6 +367,12 @@ checkMatch() {
 		fi
 		cmY=$(($cmY - 1))
 	done
+	preM=$(( $allMatches / 10 ))
+	allMatches=$(( $allMatches + $matches ))
+	postM=$(( $allMatches / 10 ))
+	if [ "$preM" -lt "$postM" ] ; then
+		speedUp
+	fi
 	if [ "$matches" -ne 0 ] ; then
 		while [ "$matches" -gt 1 ] ; do
 			cmS=$(($cmS * 2))
