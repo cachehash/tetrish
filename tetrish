@@ -295,7 +295,8 @@ render() {
 				fi
 			fi
 			if [ "$paused" = 1 ] ; then
-				rV=
+				rV=$VOID
+				rP=
 			fi
 			line=$line$rV$rP
 		done
@@ -310,7 +311,8 @@ render() {
 					rP=
 				fi
 				if [ "$paused" = 1 ] ; then
-					rV=
+					rV=$VOID
+					rP=
 				fi
 				line=$line$PREVIEW$rV$rP
 			rX=$(($rX + 1))	##no_expr##
