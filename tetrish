@@ -8,6 +8,7 @@ if [ ! -z "$ZSH_VERSION" ] ; then
 	#RANDOM=`shuf -i 0-10000 -n 1`
 fi
 ascii=-1
+SET=0
 while [ $# -gt 0 ] ; do
 	case "$1" in
 	-A)
@@ -21,6 +22,7 @@ while [ $# -gt 0 ] ; do
 	;;
 	-p)
 		BIT=$2
+		SET=1
 	;;
 	-c)
 		CW=$2
@@ -28,10 +30,11 @@ while [ $# -gt 0 ] ; do
 	esac
 	shift
 done
-if [ $ascii -eq -1 ] ; then
+if [ "$ascii" -eq -1 ] ; then
 	ascii=0
-	if [ 8"$BIT" = 8 ] ; then
+	if [ "$SET" -eq 0 ] ; then
 		BIT='[]'
+		SET=1
 	fi
 fi
 if [ 8"$CW" = 8 ] ; then
@@ -56,16 +59,13 @@ C_DOWN='OB'
 C_LEFT='OD'
 C_RIGHT='OC'
 
-LIGHT='[1m'
-DARK='[2m'
-CLEAR='[0m'
 upTo() {
 	echo "$1" "$2" | awk '{for (i=$1; i<$2; i++) print i}'
 }
 
 VOID=' '
 if [ "$ascii" -eq 0 ] ; then
-	if [ 8"$BIT" = 8 ] ; then
+	if [ "$SET" -eq 0 ] ; then
 		BIT='🔳'
 		CW=2
 	fi
@@ -74,7 +74,7 @@ if [ "$ascii" -eq 0 ] ; then
 	L_='└'
 	WALL='│'
 else 
-	if [ 8"$BIT" = 8 ] ; then
+	if [ "$SET" -eq 0 ] ; then
 		BIT='[]'
 		CW=2
 	fi
@@ -94,7 +94,6 @@ BOT=$BOT2
 FALLING=
 PREVIEW=$FALLING
 LANDED=
-GHOST=$LIGHT
 
 W=10
 H=24
@@ -120,14 +119,19 @@ else
 	}
 fi
 
+LIGHT='[1m'
+DARK='[2m'
+CLEAR='[0m'
+GHOST=$LIGHT
+
 COLOR_PREFIX='[7m'
-ORANGE=$COLOR_PREFIX'[33m'
-RED=$LIGHT$COLOR_PREFIX'[31m'
-GREEN=$LIGHT$COLOR_PREFIX'[32m'
-YELLOW=$LIGHT$COLOR_PREFIX'[33m'
-BLUE=$LIGHT$COLOR_PREFIX'[34m'
-MAGENTA=$LIGHT$COLOR_PREFIX'[35m'
-CYAN=$LIGHT$COLOR_PREFIX'[36m'
+ORANGE=$COLOR_PREFIX'[33m'$BIT$CLEAR
+RED=$LIGHT$COLOR_PREFIX'[31m'$BIT$CLEAR
+GREEN=$LIGHT$COLOR_PREFIX'[32m'$BIT$CLEAR
+YELLOW=$LIGHT$COLOR_PREFIX'[33m'$BIT$CLEAR
+BLUE=$LIGHT$COLOR_PREFIX'[34m'$BIT$CLEAR
+MAGENTA=$LIGHT$COLOR_PREFIX'[35m'$BIT$CLEAR
+CYAN=$LIGHT$COLOR_PREFIX'[36m'$BIT$CLEAR
 
 numTetronis=7
 numTetronisM1=6
@@ -266,7 +270,7 @@ render() {
 					fi
 					if eval '[ "$tetroni_'${tet}_${ang}_${rDx}_$rDy'" != "" ]' ; then
 						eval 'rV=$FALLING$tetroni_'${tet}_${ang}_${rDx}_$rDy
-						rP=$BIT
+						rP=
 						void=0
 					fi
 				fi
@@ -278,7 +282,7 @@ render() {
 					fi
 					if eval '[ "$tetroni_'${tet}_${ang}_${rDx}_$rBy'" != "" ]' ; then
 						rV=$GHOST
-						rP=$BIT
+						rP=$BIT$CLEAR
 						void=0
 					fi
 				fi
@@ -287,13 +291,13 @@ render() {
 				if [ "$rV" = "" ] ; then
 					rP=$VOID
 				else
-					rP=$BIT
+					rP=
 				fi
 			fi
 			if [ "$paused" = 1 ] ; then
 				rV=
 			fi
-			line=$line$rV$rP$CLEAR
+			line=$line$rV$rP
 		done
 		line=$line$WALL
 		if [ "$rY" -lt "$T_SZ" ] ; then
@@ -303,12 +307,12 @@ render() {
 				if [ "$rV" = "" ] ; then
 					rP=$VOID
 				else
-					rP=$BIT
+					rP=
 				fi
 				if [ "$paused" = 1 ] ; then
 					rV=
 				fi
-				line=$line$PREVIEW$rV$rP$CLEAR
+				line=$line$PREVIEW$rV$rP
 			rX=$(($rX + 1))	##no_expr##
 			done
 		fi
