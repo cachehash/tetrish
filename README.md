@@ -1,3 +1,5 @@
+# Attention
+This repository has been archived and development has moved to https://gitlab.com/cachehash/tetrish.
 # Tetrish
 Tetrish is a Tetris clone written entirely in shell script. The main goal of the project is to run in as many Bourne style shells as possible and be fully posix complient.
 
